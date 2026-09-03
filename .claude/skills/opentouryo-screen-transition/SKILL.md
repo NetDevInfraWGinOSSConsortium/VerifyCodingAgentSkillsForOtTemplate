@@ -30,9 +30,17 @@ Web Forms の画面実装そのものは `opentouryo-layer-p-webforms-screen` /
 
 本スキルは主に後者（`SCDefinition.xml` とチェック）を扱う。単純遷移だけなら SCDefinition は要らない。
 
-**★ `return url`（UOC の戻り値遷移）を Transfer にするか Redirect にするかは、`FxScreenTransitionMode` が `off` のとき
-app キー `ScreenTransitionMethod` で決まる**（`1`=`Server.Transfer`／`2`=`Response.Redirect`＝`FxRedirect`。`~/` は `ResolveUrl` 解決。
-実装 `MyBaseController.cs`）。`FxScreenTransitionMode`（T/R/off）とは**別のキー**なので混同しない。
+**★ 「単純遷移」と「ラベル遷移」は別 API ではない＝UOC の戻り値の“意味”が主スイッチ `FxScreenTransitionMode` で切り替わる**
+（実装 `MyBaseController.UOC_Screen_Transition(url)`＝ハンドラの `return` 値を受ける唯一の入口）：
+
+| `FxScreenTransitionMode` | `return` した文字列の意味 | 遷移 |
+| --- | --- | --- |
+| **`off`（配布サンプルの既定）** | **URL**（`return "遷移先.aspx"`） | `ScreenTransitionMethod`（`1`=`Server.Transfer`＝`FxTransfer`／`2`=`Response.Redirect`＝`FxRedirect`。`~/` は `ResolveUrl` 解決）。**`SCDefinition.xml` は読まれない**（空の `<SCD/>`）＝定義を書いても効かない |
+| **`T` / `R`** | **遷移ラベル**（`return "遷移ラベル"`） | そのまま `ScreenTransition()` に渡り `SCDefinition.xml` から URL を解決（`this.ScreenTransition(...)` を自分で呼ぶ必要はない） |
+
+**∴ 定義ファイルを使うには主スイッチを `T`/`R` にすることが前提。** これを知らないと「`off` のまま `SCDefinition.xml` を書いて `return "ラベル"`」＝ラベルが URL 扱いで **404**、逆に「`T`/`R` で `return "url.aspx"`」＝未定義ラベルで **`FrameworkException`**、のどちらかに必ず陥る。`ScreenTransitionMethod`（`1`/`2`）と `FxScreenTransitionMode`（T/R/off）は**別キー**なので混同しない。
+
+**★ 「`SCDefinition.xml` に定義がある」＝「画面遷移制御を使っている」ではない。** 主スイッチ `off` では定義は読まれず（空の `<SCD/>`）**効いていない**＝`off` のまま整合性のために `SCDefinition.xml` をメンテナンスする〔画面追加・削除に合わせて更新しておく〕のは**便宜として妥当**（将来 `T`/`R` に切り替える布石にもなる）。ただし**「定義したから使えている」と誤認しない**——実際に効いているかは**主スイッチが `T`/`R` かどうか**（＝実 `app.config` の `FxScreenTransitionMode`）で判断し、報告でも「定義あり」と「機能が有効」を区別する。
 
 ## Redirect と Transfer の使い分け（設計比較）
 
@@ -127,6 +135,8 @@ DTD に `mode (T|R) #IMPLIED` と定義され、`FxLiteral.XML_SC_ATTR_MODE = "m
 
 - **`FxScreenTransitionCheck` を設定せずに `SCDefinition` を書く** — 未設定は `off` 扱い。
   **黙ってチェックされない**
+- **主スイッチを `off`→`T`/`R` にする前に、既存の全画面の `return` をラベル化し忘れる** — 主スイッチはアプリ全体に効くので、URL を返していた既存画面は一斉に未定義ラベル扱い＝`FrameworkException`。片方だけ直すと直さなかった画面が壊れる
+- **主スイッチを ON にしたのに未登録の画面を残す** — `Check` が実際に効き始め、`SCDefinition.xml` に無い **`MyBaseController` 派生画面**（例：Sign-out の素リンク `logout.aspx` への Get）が拒否される。**`directLink="allow"` で登録**する（`System.Web.UI.Page` 派生〔`ErrorScreen.aspx`・ダイアログ・`Ping.aspx` 等〕はチェック対象外＝登録不要）
 - **`directLink` 属性を省く** — 属性なしは `FrameworkException` になる
 - **`CmnTransition` の `label` の先頭に数字を使う** — XML の `ID` 型なので不正
 - **DTD を省く** — 埋め込み形式が前提

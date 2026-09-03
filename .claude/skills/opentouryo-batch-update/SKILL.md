@@ -40,7 +40,7 @@ metadata:
 `foreach (DataRow dr in dt.Rows)` で回し、**`switch (dr.RowState)`** で自動生成 Dao の CUD を呼ぶ。
 行ごとに `dao.ClearParametersFromHt()` でパラメタをクリアする。コード全文は `references/snippets.md`。
 
-- **`Added`** → `S1_Insert()`（**全列必須**＝生成 INSERT が全列に `@param` を持つ。列を1つでも設定しないと実行時エラー）。
+- **`Added`** → `S1_Insert()`（**全列必須**＝生成 INSERT が全列に `@param` を持つ。列を1つでも設定しないと実行時エラー。**裏を返せば IDENTITY が無く全列に値を入れる表なら `S1_Insert` が素直**）。
   **一覧が全列でないなら `D1_Insert()`**（動的＝設定した列だけ INSERT する。生成 SQL を読んで判断＝`opentouryo-dao-generated`）。
   **★ IDENTITY（自動採番）列があるテーブルは列数に関わらず `D1_Insert()` 一択**——DaoGen CLI の `S1_Insert` は
   **生成時に IDENTITY 列も列リスト/VALUES に含める**ため、そのまま実行すると `IDENTITY_INSERT が OFF…` で必ず失敗する
@@ -99,9 +99,11 @@ metadata:
 - **`DataKeyNames`＋`DataKeys[i]` はバッチ更新では使えない**（`opentouryo-layer-p-webforms-event` は通常これを勧めるが、
   **追加行の主キーが未採番＝`DBNull`** なので成立しない）。バッチ更新時は DataRow 側で対応付ける。
 - **★ `ExecSelectFill_DT` は制約を取り込まない**（実体 `new SqlDataAdapter(cmd).Fill(dt)`＝`FillSchema` せず・実ソース確認）＝`PrimaryKey`/NOT NULL 無し・`AllowDBNull` は全列 true。∴ `NewRow()`+`Add()` は**例外を出さない**（旧記述の `NoNullAllowedException` は誤り）。
-  **真の罠は「DB 側 NOT NULL 列〔主キー以外も〕を `DBNull` で INSERT→`SqlException 515`」**＝INSERT 時に出て**ビルドも 200 応答も通り静かに壊れる**。→ **Added 行は DB-NOT-NULL 列すべてに値を入れ**、**読み戻しは NULL 可否に合わせる**（NOT NULL→空は `""`／NULL 可→空は `DBNull`）。**仮主キーが要るとき〔`Rows.Find`／自前 `PrimaryKey`／仮 ID 表示〕だけ負値仮採番**（`dt.PrimaryKey` 自前設定＋シード＝既存仮採番の最小-1。INSERT には渡さない。`references/snippets.md`）。
+  **真の罠は「DB 側 NOT NULL 列〔主キー以外も〕を `DBNull` で INSERT→`SqlException 515`」**＝INSERT 時に出て**ビルドも 200 応答も通り静かに壊れる**。→ **Added 行は DB-NOT-NULL 列すべてに値を入れ**、**読み戻しは NULL 可否に合わせる**（NOT NULL→空は `""`／NULL 可→空は `DBNull`）。
+  **★ 同様に CHECK 制約に反する値も `ExecSelectFill_DT` では検出できず INSERT/UPDATE 時に `SqlException 547`**（例：`Quantity > 0`・`Discount 0〜1`）＝**行追加時に業務上妥当な既定値**（`Quantity=1` 等）を入れる。**仮主キーが要るとき〔`Rows.Find`／自前 `PrimaryKey`／仮 ID 表示〕だけ負値仮採番**（`dt.PrimaryKey` 自前設定＋シード＝既存仮採番の最小-1。INSERT には渡さない。`references/snippets.md`）。
 - **セル編集は自動では `DataTable` に入らない** → グリッドのセルから **DataRow へ読み戻す**（`Modified` はこの代入で立つ）。
   **★ 元が `DBNull` の列に `""` を代入すると無駄な `Modified`（無駄 UPDATE）が量産される** → **現在値と一致するなら代入しない**。
+  **★ 数値・日付列（`short`／`float`／`decimal`／`DateTime` 等）に空文字や文字列を決め打ちで代入しない**——`""` は変換で落ち、`int`/`decimal` だけの決め打ち分岐だと `short`/`float` が漏れる。**列の型に合わせて変換する**（`Convert.ChangeType(edited, dr.Table.Columns[c].DataType, CultureInfo.InvariantCulture)`。空欄は NULL 可否で `DBNull` か既定値）。
   読み戻しスニペットは `references/snippets.md`。
 
 ## 大量データ（性能）

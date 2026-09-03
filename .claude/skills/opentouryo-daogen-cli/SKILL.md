@@ -45,7 +45,8 @@ $exe = "OT_Tools\DaoGen_Tool\bin\Debug\net10.0-windows7.0\OpenTouryo.DaoGen_Tool
 - **`DAODEFGEN`**：DB のスキーマ → **D層定義情報（`*.csv`）**。**DB 接続が要る**（Northwind 等＝`opentouryo-project-setup-db`）。
 - **`DAOSQLGEN`**：定義 CSV ＋ テンプレート → **Dao(`.cs`)・DTO・動的 SQL(`.xml`)・静的 SQL(`.sql`)**。**DB には接続しない**（テンプレート選択にのみ `/DAP` を使う）。
 - **定義 CSV は中間ファイル＝Excel で編集できる**（2フェーズの間に対象の絞り込み・主キー調整ができる。ヘッダ行の扱いは `/NOHEADER`）。
-- **主キーは SQL Server / Oracle は自動取得**。**それ以外の DBMS や、PK を持たないビューは `/PRIMARYKEYS <T:C|C,…>` で指定**する（`/HELP`）。
+- **主キーは SQL Server / Oracle は自動取得**（複合主キーもそのまま取得）。**それ以外の DBMS や、PK を持たないビューは `/PRIMARYKEYS <T:C|C,…>` で指定**する（`/HELP`）。
+- **★ スペース入りテーブル名も扱える**（例 `/TABLES "Order Details"`＝クラス名は `_` 置換で `DaoOrder_Details`・生成 SQL は `[Order Details]` とブラケット）。
 
 ```powershell
 $work = "C:/temp/daogen"        # ★ 出力先は / 区切り（下の罠 a）

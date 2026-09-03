@@ -44,7 +44,7 @@ metadata:
   **★ 添字 `i` が 0 起点の連番でない〔Deleted を飛ばす〕とき、各行に `<input type="hidden" name="Rows.Index" value="@i" />` も出す**——ASP.NET (Core) MVC のコレクション モデルバインドは**非連番の添字は `Rows.Index` が無いとバインドしない**＝`model.Rows` が空のまま `BatchUpdate` が走り**編集が静かに捨てられる**（実測：追加行が `NULL` で INSERT→`SqlException 515`。ビルドも 200 も通る）。スニペット＝`references/snippets.md`。
 - **★ hidden 項目名とアクション引数名を衝突させない**——ページ移動等をクエリ文字列の引数（例 `Page(… , int pageIndex)`）で渡すとき、フォームに同名の hidden（編集状態保持用の `PageIndex` 等）があると、**モデルバインドは大文字小文字を区別せず衝突しフォーム値がクエリ文字列より優先**＝移動先が無視される（実測：［次ページ］で常に同じページが返る／ビルドも 200 も通る）。**アクション引数名をフォーム項目と別名にする**（`targetPage` 等）。
 - **ダイアログは JavaScript**（確認＝`onclick="return window.confirm('…')"`、通知＝`window.alert(@Json.Serialize(Model.Message))` を `@section` のスクリプトで）。
-- **★ (1) 一覧→詳細の戻り・二重実行**：MVC は `Session` を避け、**検索条件をクエリ文字列で詳細へ渡し [戻る] で返して再検索**（`autoSearch=true`）＝「一覧→詳細→一覧」で条件が消えない。**単票の追加・削除の後は同じ操作の二重実行を防ぐ**（追加2件・削除は「件数0」の誤メッセージ）＝追加/削除後は該当ボタンを非活性にし [戻る] を促す（更新は `AcceptChanges` で継続可）。Web Forms は `Session` 退避＋`SCDefinition.xml`＝`opentouryo-webforms-crud-screens`。
+- **★ (1) 一覧→詳細の戻り・二重実行**：MVC は `Session` を避け、**検索条件をクエリ文字列で詳細へ渡し [戻る] で返して再検索**（`autoSearch=true`）＝「一覧→詳細→一覧」で条件が消えない。**単票の追加・削除の後は同じ操作の二重実行を防ぐ**（追加2件・削除は「件数0」の誤メッセージ）＝追加/削除後は該当ボタンを非活性にし [戻る] を促す（更新は `AcceptChanges` で継続可）。Web Forms は `Session` 退避で復元＝`opentouryo-webforms-crud-screens`。
 
 ## 編集中 DataTable の保持（Web 共通は `opentouryo-batch-update`）
 

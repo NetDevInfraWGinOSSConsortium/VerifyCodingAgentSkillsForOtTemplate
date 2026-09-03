@@ -1,10 +1,15 @@
-# 前提
+# 概要
+- Open棟梁向けに開発されたコーディング・エージェントのスキルを実験・検証するためのリポジトリのテンプレート
+- フォークしたり、ZIPでクローンしたりして使用すると良い。使用時は前提部を当該環境で書き換えること。
+
+## 前提
+- CodingAgentは、xxxx（モデルはxxxx）
 - .NETは、net48、netxx.x が前提
-- Open棟梁はxx-xxを使用（2026/8）
-- 使用したCodingAgentは、xxxx（モデルはxxxx）
+- Open棟梁はxx-xxを使用...既定はdevelop(.dosc/prompt/検証プロンプト.md）
+- OpenTouryoCodingAgentAssetsから最新スキル（xx-xx）をインストール。
 - LocalServicesOnDockerでDB（ローカル・サービス）を動かしておく。
 
-# 入力したプロンプト
+## プロンプト
 docのplan、specを参照するので以下の非常に短いプロンプトのみで検証可能。
 
 - .\docs\prompt\検証プロンプト.md の セットアップ > 基本 の Core、Transformを実行して下さい。

@@ -125,7 +125,7 @@ protected string UOC_（コントロール名）_（イベント名）(FxEventAr
 | 要素 | 決まり |
 | --- | --- |
 | アクセス修飾子 | `protected`。**`private` にすると呼ばれない** |
-| 戻り値 | `string`。**遷移先 URL**。遷移しないなら `string.Empty` を返す |
+| 戻り値 | `string`。**遷移先 URL**（`FxScreenTransitionMode=T`/`R` のときは代わりに**遷移ラベル**＝`opentouryo-screen-transition`）。遷移しないなら `string.Empty` を返す |
 | 引数 | `FxEventArgs` |
 
 GridView の `RowUpdating` / `RowDeleting` / `PageIndexChanging` / `Sorting` だけ、

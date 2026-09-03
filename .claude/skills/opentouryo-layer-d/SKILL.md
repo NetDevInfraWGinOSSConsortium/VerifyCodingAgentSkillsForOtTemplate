@@ -108,6 +108,13 @@ DaoShippers gen  = new DaoShippers(this.GetDam());   // 自動生成Dao
 
 明細を `DataRow` の `RowState` で一括反映するのは `opentouryo-batch-update`。
 
+### 親子（ヘッダ・明細）を1つの UOC＝1トランザクションで扱う
+
+親（ヘッダ）と子（明細）を1トランザクションで CUD するとき（詳細画面に明細グリッドを足す等。画面側は `opentouryo-mvc-crud-screens`／`opentouryo-webforms-crud-screens`／`opentouryo-winforms-crud-screens`）：
+
+- **削除は子 → 親の順**。子に親への FK があると**親を先に消すと参照整合性違反**（SQL Server `Msg 547`）で落ちる。これは**実行するまで分からない**（ビルドも静的検証も通る）。∴ **先に子を全件削除してから親を `S4`/`D4_Delete`**。子の**親キーによる全件削除は「複合主キーの親キーだけ設定」**でできる＝`opentouryo-dao-generated`。
+- **採番したばかりの親キーを子に差し込む**なら `@@IDENTITY` で取る（上記のとおり自動生成Dao の INSERT は採番値をメモリに戻さない）。親 `D1_Insert` の直後に **`SELECT CAST(@@IDENTITY AS int)` を共通Dao（`CmnDao`）で実行**して拾い、子の FK 列に入れて INSERT する。**`SCOPE_IDENTITY()` は使えない**——自動生成Dao の INSERT と採番取得は**別コマンド＝別スコープ**なので `NULL` になる。`@@IDENTITY` は**同一コネクション**で有効で、**B層の1トランザクション＝同一接続**なので成立する（対象表にトリガが無ければ、トリガ由来の採番を拾う `@@IDENTITY` の弱点も該当しない）。
+
 ## 楽観排他方式（更新・削除の競合検出）
 
 **取得してから更新／削除するまでの間に、他者が先に同じ行を変更していないかを検出する。** 判定は方式を問わず共通で

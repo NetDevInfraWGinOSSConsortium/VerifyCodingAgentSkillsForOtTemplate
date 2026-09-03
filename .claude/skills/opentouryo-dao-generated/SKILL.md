@@ -76,6 +76,8 @@ Insert だけは主キー条件がないため、`S1` = 全列固定、`D1` = �
 
 **★ `S2_Select(dt)` は主キーが不一致でも「列（スキーマ）だけの0行 `DataTable`」を返す**（中身は `DataAdapter.Fill`＝結果セットのメタデータから列を作る）。これを使うと**追加モードの空の器**を D層スキーマから起こせる：`dao.PK_<主キー> = 0; dao.S2_Select(dt); dt.Rows.Add(dt.NewRow());`＝型付きの空行（`RowState=Added`）が得られ、画面側に列定義を持たなくて済む（型変換もそのまま効く。`opentouryo-batch-update`）。
 
+**★ 複合主キー表は「主キーの一部だけ設定」で親キー検索・親キー削除ができる。** 動的（D系）の WHERE は列ごとに `<IF>AND [列] = @列<ELSE>AND [列] IS NULL</ELSE></IF>` なので、**設定しなかった列は `<IF>` ごと消える**（DPQ 3状態＝`opentouryo-query-definition`）。∴ 複合主キー（例 `OrderID`＋`ProductID`）の子テーブルで **親キー `PK_OrderID` だけ設定して `D2_Select(dt)` / `D4_Delete()`** を呼ぶと `WHERE [OrderID] = @OrderID` だけになり、その親に属する子を**全件取得／全件削除**できる（`S2_Select` / `S4_Delete` は複合主キー全指定＝1件用）。**「設定しない」を「`null` 設定〔＝`IS NULL`〕」と混同しない**。親子1トランザクションでの削除順は `opentouryo-layer-d`。
+
 **`D3_Update()` / `D4_Delete()`（検索条件を動的化した更新・削除）は危険。** 条件を1つ間違えると
 大量データを破壊しうる。主キー指定の `S3_Update()` / `S4_Delete()` で足りるなら、そちらを使う。
 
