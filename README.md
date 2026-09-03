@@ -1,4 +1,11 @@
+# 前提
+- .NETは、net48、netxx.x が前提
+- Open棟梁はxx-xxを使用（2026/8）
+- 使用したCodingAgentは、xxxx（モデルはxxxx）
+- LocalServicesOnDockerでDB（ローカル・サービス）を動かしておく。
+
 # 入力したプロンプト
+docのplan、specを参照するので以下の非常に短いプロンプトのみで検証可能。
 
 - .\docs\prompt\検証プロンプト.md の セットアップ > 基本 の Core、Transformを実行して下さい。
 
