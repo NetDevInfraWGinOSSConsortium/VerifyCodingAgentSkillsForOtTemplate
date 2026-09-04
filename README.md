@@ -5,9 +5,9 @@
 ## 前提
 - CodingAgentは、xxxx（モデルはxxxx）
 - .NETは、net48、netxx.x が前提
-- Open棟梁はxx-xxを使用...既定はdevelop(.dosc/prompt/検証プロンプト.md）
-- OpenTouryoCodingAgentAssetsから最新スキル（xx-xx）をインストール。
-- LocalServicesOnDockerでDB（ローカル・サービス）を動かしておく。
+- [Open棟梁](https://github.com/OpenTouryoProject/OpenTouryo)はxx-xxを使用...既定はdevelop(.dosc/prompt/検証プロンプト.md）
+- [OpenTouryoCodingAgentAssets](https://github.com/OpenTouryoProject/OpenTouryoCodingAgentAssets)から最新スキル（xx-xx）をインストール。
+- [LocalServicesOnDocker](https://github.com/NetDevInfraWGinOSSConsortium/LocalServicesOnDocker)でDB（ローカル・サービス）を動かしておく。
 
 ## プロンプト
 docのplan、specを参照するので以下の非常に短いプロンプトのみで検証可能。
