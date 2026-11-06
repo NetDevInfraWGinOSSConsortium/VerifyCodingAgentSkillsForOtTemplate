@@ -1,0 +1,129 @@
+# expectation-guard-source: OpenTouryoCodingAgentAssets@fdbb27f0cb0e src/quality/ExpectationGuard/expectation-change.yml sha256:-
+# PR のコミットに、トレーラーの無い期待値の変更が無いかを確かめる（段 3。OpenTouryoCodingAgentAssets#3）。
+#
+# ＜位置づけ＞
+#   段 1（Claude Code の PreToolUse フック）と段 2（commit-msg フック）は、手元の設定に頼る。
+#   フックを有効にしていない、--no-verify で迂回した、別のエージェントを使った、を最終的に塞ぐのがここ。
+#   何を期待値の変更と数えるかの正は、本体（tools/ExpectationGuard/CheckExpectationChange.ps1）と規則のファイルにある。ここには判定を書かない。
+#
+# ＜検出器は、ベース側の版を使う＞
+#   PR の側の検出器を使うと、PR が検出器（本体・規則）を緩めれば素通りになる。
+#   そこでベースのコミットを別のフォルダへ取り出し、その版で PR のコミットを調べる。
+#   **ベースに検出器が無いとき（導入する PR）だけ、PR の側の版を使う。** その PR は人が差分を確かめる。
+#   このワークフロー自体は pull_request なので PR の側の定義で動くが、書き換えれば「仕組みの変更」として数えられる。
+#   pull_request_target にはしない（書き込み権限の文脈で PR を扱うことになる）。
+#
+# ＜雛形＞
+#   install.ps1 -IncludeQualityGuard が、無いときだけ置く。以後は導入先が持つ（ジョブ名・対象のブランチは合わせてよい）。
+#   必須のチェックにするかは人が決める。
+#
+# **run: の中は ASCII だけにする。** Windows PowerShell 5.1 は、Actions が書き出す BOM 無しの一時ファイルを
+# ANSI（日本語の Windows では Shift_JIS）として読み、日本語の文字列で構文エラーになる。
+
+name: Expectation change
+
+on:
+  pull_request:
+    branches: [develop, master, main]
+
+permissions:
+  contents: read
+
+jobs:
+  expectation-change:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      # PR のコミットを範囲で辿るので、履歴をすべて取る。
+      - name: Checkout (PR)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout (base, for the checker)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _base
+          persist-credentials: false
+
+      - name: Check expectation changes
+        shell: powershell
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          $checker = Join-Path $env:GITHUB_WORKSPACE "_base\tools\ExpectationGuard\CheckExpectationChange.ps1"
+          if (-not (Test-Path $checker))
+          {
+            Write-Host "::warning::CheckExpectationChange.ps1 is not in the base; using the PR's version (introducing PR)."
+            $checker = Join-Path $env:GITHUB_WORKSPACE "tools\ExpectationGuard\CheckExpectationChange.ps1"
+          }
+          & $checker -Range "$env:BASE_SHA..$env:HEAD_SHA"
+          exit $LASTEXITCODE
+
+      # The copies written by install.ps1 must match the original (warning only).
+      # always(): 上の検査が落ちても回す（落ちた PR でこそ、写しを手で直していないかを見たい）。
+      - name: Verify copies
+        if: always()
+        shell: powershell
+        run: |
+          & (Join-Path $env:GITHUB_WORKSPACE "tools\ExpectationGuard\CheckExpectationChange.ps1") -VerifyCopy
+          exit 0
+
+  # テストの内容を変えたのに、生成物（GeneratedRules）が作り直されていないことを検出する。
+  # 規則に GeneratedRules が無ければ、何もせずに通る。
+  generated-regenerated:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout (PR)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout (base, for the checker)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _base
+          persist-credentials: false
+
+      - name: Check generated files
+        shell: powershell
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          $checker = Join-Path $env:GITHUB_WORKSPACE "_base\tools\ExpectationGuard\CheckExpectationChange.ps1"
+          if (-not (Test-Path $checker))
+          {
+            Write-Host "::warning::CheckExpectationChange.ps1 is not in the base; using the PR's version (introducing PR)."
+            $checker = Join-Path $env:GITHUB_WORKSPACE "tools\ExpectationGuard\CheckExpectationChange.ps1"
+          }
+          & $checker -Range "$env:BASE_SHA..$env:HEAD_SHA" -CheckGenerated
+          exit $LASTEXITCODE
+
+  # 判定の用例（「この差分なら検出する／しない」）。PR の側の本体を試す（本体を直す PR を確かめるため）。
+  expectation-guard-tests:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout (PR)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Run the cases
+        shell: powershell
+        run: |
+          & (Join-Path $env:GITHUB_WORKSPACE "tools\ExpectationGuard\ExpectationGuard.Tests\Run-Tests.ps1")
+          exit $LASTEXITCODE
