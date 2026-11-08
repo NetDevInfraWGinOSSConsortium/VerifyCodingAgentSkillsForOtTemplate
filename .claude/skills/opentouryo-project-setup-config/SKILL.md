@@ -74,6 +74,8 @@ packages/
 - **`OpenTouryoAssemblies/`（ベンダした DLL）と `base2-overlay/`（親クラス2 の修正差分）は除外しない**。
   リポジトリに含めて、再セットアップ無しでビルドでき、修正差分も追跡できるようにする。
   **※ 検証/CI 用途では `OpenTouryoAssemblies/` を除外してもよい**（DLL は使い捨て＝クローン後に `scripts\setup-build.ps1` を回す前提。リポ肥大を避ける）。ただし **`base2-overlay/` は必ずコミット**（失うと DLL を再現できない）。既存 repo の `.gitignore` が `OpenTouryoAssemblies/` を除外していても、この方針なら矛盾しない＝どちらにするかは検収者判断。
+  **除外するときも `build-ref.txt`（何を焼いたか。③）は残す**：`OpenTouryoAssemblies/*` ＋ `!OpenTouryoAssemblies/build-ref.txt` と書く
+  （**`OpenTouryoAssemblies/` の形だと `!` で戻せない**＝フォルダごと除外されるため。実測）。既存が `OpenTouryoAssemblies/` ならこの2行に置き換える。
 - 既存の `.gitignore` があれば追記（重複行は避ける）。サンプル同梱の `.gitignore` があれば統合する。
 
 検証まで通ったら、`opentouryo-project-setup` の「完了後（任意）」に従い、構成変更（`opentouryo-project-transform`）へ

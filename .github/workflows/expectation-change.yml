@@ -1,4 +1,4 @@
-# expectation-guard-source: OpenTouryoCodingAgentAssets@fdbb27f0cb0e src/quality/ExpectationGuard/expectation-change.yml sha256:-
+# expectation-guard-source: OpenTouryoCodingAgentAssets@b3d231fc694b src/quality/ExpectationGuard/expectation-change.yml sha256:-
 # PR のコミットに、トレーラーの無い期待値の変更が無いかを確かめる（段 3。OpenTouryoCodingAgentAssets#3）。
 #
 # ＜位置づけ＞

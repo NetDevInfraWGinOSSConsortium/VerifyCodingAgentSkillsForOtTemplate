@@ -170,7 +170,7 @@ Community/Professional/Enterprise を網羅）。VS18 の BuildTools/Professiona
 `net10.0\OpenTouryo.Business.dll` か `-Recurse` で確認する（`examples.md` netcore 雛形）。
 
 **★ ベンダした `<ref>`・ランタイム・実施日を `OpenTouryoAssemblies\build-ref.txt` に記録しコミット**（無いと後で
-`opentouryo-project-policy` が上流ソースを引けない。**moving ref は取得 ZIP のハッシュも併記**〔`examples.md`〕）。
+`opentouryo-project-policy` が上流ソースを引けない。**moving ref は取得 ZIP のハッシュも併記**〔`examples.md`〕。除外時も残す＝`-setup-config`）。
 
 ## やってはいけないこと
 

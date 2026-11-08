@@ -204,12 +204,18 @@ $extract = Join-Path $work "OpenTouryo-$ref"
 $cs      = Join-Path $extract 'root\programs\CS'
 $vendor  = Join-Path $repo 'OpenTouryoAssemblies\Build_netcore100'
 $needRichClient = $true   # 標的が 2CS / rich client（TFM net10.0-windows7.0）なら true。Web/MVC/Bat/CLI は false
+# ★ net48 と同じ2つ。net48 を同じ回で先に走らせたなら $false のまま（展開ツリーを流用する）。
+#   **net10.0 だけの repo（net48 を走らせない）では、ここで指定する**＝moving ref は $Redownload、
+#   前回 overlay を当てた展開ツリーを素で焼くなら $Fresh（指定しないと古い／素でない展開ツリーをそのまま焼く・実測）。
+$Fresh      = $false
+$Redownload = $false
+$zip = Join-Path $work "OpenTouryo-$ref.zip"
 
 # --- 1. 既存 extract を流用（無ければ ZIP 取得）。net48 で展開済みなら再 DL しない ---
-# ★ moving ref (develop) は net48 側を -Redownload で先に走らせて $extract を最新化すること
-#   （ここは extract を流用するだけ＝古い展開ツリーが残っていると古い develop を焼く）。
+New-Item -ItemType Directory -Force -Path $work | Out-Null
+if ($Redownload) { Remove-Item $zip, $extract -Recurse -Force -ErrorAction SilentlyContinue }
+if ($Fresh -and (Test-Path $extract)) { Remove-Item $extract -Recurse -Force }
 if (-not (Test-Path $cs)) {
-    $zip = Join-Path $work "OpenTouryo-$ref.zip"
     if (-not (Test-Path $zip)) {
         # See setup-build.ps1: WebClient's old TLS default 404s on GitHub codeload.
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -250,7 +256,16 @@ if ($needRichClient -and
     -not (Test-Path (Join-Path $vendor 'net10.0-windows7.0\OpenTouryo.Business.dll'))) {
     throw "RichClient sample but net10.0-windows7.0\OpenTouryo.Business.dll missing (run 3_Build_BusinessRichClient_netcore100)."
 }
+# build-ref.txt（net48 版と同じ。develop は zip ハッシュを併記）
+$zipHash = $(if (Test-Path $zip) { (Get-FileHash $zip -Algorithm SHA256).Hash.Substring(0,12) } else { 'unknown' })
+"{0}`tnetcore100`tref={1}`trichclient={2}`tzip={3}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm'), $ref, $needRichClient, $zipHash |
+    Add-Content -Path (Join-Path $repo 'OpenTouryoAssemblies\build-ref.txt')
 ```
+
+> **★ 詳細ログの「この参照を解決できませんでした」は失敗ではない（実測）**：ビルドの詳細ログ（参照の解決）に、
+> HintPath 参照した DLL の**依存関係**（`Oracle.ManagedDataAccess`・`MySql.Data`・`Npgsql`・`Microsoft.Data.SqlClient`・
+> `Microsoft.Extensions.Configuration.*`・`BouncyCastle.Crypto` など）が「解決できませんでした」と多数出るが、各ビルドの末尾は
+> 「ビルドに成功しました」「0 エラー」で DLL も揃う。**成否は末尾のエラー数と生成物 DLL の実在で判定する**（§3）。
 
 > **既知の警告（本体側・版依存）**：core サンプル（例 Core MVC）が参照する `log4net` の版により挙動が変わる。
 > **`3.2.0` ではビルドで `NU1902`（脆弱性・中）** が出ることがある（**ビルドは通る**）。**`3.3.0` 以降は解消＝0 警告**

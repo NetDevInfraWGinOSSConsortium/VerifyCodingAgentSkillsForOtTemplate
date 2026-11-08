@@ -31,11 +31,12 @@
     #   Match の要素に Paths を書くと、そのパスのファイルでだけ当てる（1 行は、規則ごとに 1 回だけ数える）。
     #   属性の並び（[Test, Ignore("...")]）にも当たるよう、[ か , の直後を見る。
     LineRules = @(
-        # アプリ開発の既定（OpenTouryoCodingAgentAssets#4）：テストは NUnit、テストのプロジェクトは <Webプロジェクト名>.Tests/
-        #   （スキル opentouryo-test-layer-b・TESTING.md 3 節）。別の置き場所なら Paths を合わせる。
+        # アプリ開発の既定（OpenTouryoCodingAgentAssets#4・#8）：テストは NUnit、テストのプロジェクトは
+        #   B層 <Webプロジェクト名>.Tests/・画面の E2E <Webプロジェクト名>.E2ETests/
+        #   （スキル opentouryo-test-layer-b・opentouryo-test-e2e-web・TESTING.md 3 節）。別の置き場所なら Paths を合わせる。
         @{
             Name  = 'テストの削除'
-            Paths = @('^(.+/)?[^/]+\.Tests/.+\.cs$')
+            Paths = @('^(.+/)?[^/]+\.(E2E)?Tests/.+\.cs$')
             Count = 'Removed'
             Match = @(
                 @{ Pattern = '[\[,]\s*(Test|TestCase|TestCaseSource)\s*[\],(]' }
@@ -43,7 +44,7 @@
         }
         @{
             Name  = 'Ignore の追加'
-            Paths = @('^(.+/)?[^/]+\.Tests/.+\.cs$')
+            Paths = @('^(.+/)?[^/]+\.(E2E)?Tests/.+\.cs$')
             Count = 'Added'
             Match = @(
                 @{ Pattern = '[\[,]\s*(Ignore|Explicit)\s*[\],(]|\bAssert\s*\.\s*Ignore\s*\(' }
@@ -51,7 +52,7 @@
         }
         @{
             Name  = '根拠の削除'
-            Paths = @('^(.+/)?[^/]+\.Tests/.+\.cs$')
+            Paths = @('^(.+/)?[^/]+\.(E2E)?Tests/.+\.cs$')
             Count = 'Removed'
             Match = @(
                 @{ Pattern = '[\[,]\s*Basis\s*\(' }
@@ -59,10 +60,10 @@
         }
         @{
             Name  = '検証の削除'
-            Paths = @('^(.+/)?[^/]+\.Tests/.+\.cs$')
+            Paths = @('^(.+/)?[^/]+\.(E2E)?Tests/.+\.cs$')
             Count = 'Removed'
             Match = @(
-                @{ Pattern = '\bAssert\s*\.' }
+                @{ Pattern = '\bAssert\s*\.|\bExpect\s*\(' }
             )
         }
     )

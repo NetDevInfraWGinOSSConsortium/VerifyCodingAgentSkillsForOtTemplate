@@ -1,4 +1,4 @@
-﻿# expectation-guard-source: OpenTouryoCodingAgentAssets@fdbb27f0cb0e src/quality/ExpectationGuard/ExpectationGuard.ps1 sha256:c0833938e4cd37042217f956917b8f24e3b4a69ebf30857c9c4f4422a8ec8be5
+﻿# expectation-guard-source: OpenTouryoCodingAgentAssets@b3d231fc694b src/quality/ExpectationGuard/ExpectationGuard.ps1 sha256:c0833938e4cd37042217f956917b8f24e3b4a69ebf30857c9c4f4422a8ec8be5
 <#
 .SYNOPSIS
     期待値の変更になりうる編集を、人の確認付きにする（段 1。Claude Code の PreToolUse フック）。

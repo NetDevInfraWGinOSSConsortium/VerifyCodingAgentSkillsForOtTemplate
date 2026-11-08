@@ -166,6 +166,7 @@ namespace <名前空間>.Tests
         [SetUp]
         public void SetUp()
         {
+            // キーは列の型と書式に合わせる（SKILL の「データの準備と後始末」）。これは幅のある文字列の列（nvarchar(40)）の例
             key = "T-" + Guid.NewGuid().ToString("N").Substring(0, 10);
             // 前提のデータが要るなら、ここで key を使って入れる（Exec を参照）
         }
@@ -173,7 +174,7 @@ namespace <名前空間>.Tests
         [TearDown]
         public void TearDown()
         {
-            // 失敗したテストの後でも消える
+            // 失敗したテストの後でも消える。親子のあるデータは子から消す（明細 → 受注 → 顧客）
             Exec("DELETE FROM Shippers WHERE CompanyName = @key");
         }
 

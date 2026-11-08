@@ -91,7 +91,8 @@ IIS Express / w3wp の CWD はアプリ フォルダでないため 500 にな�
 - **core（`appsettings.json`）固有**：
   - **値はスラッシュ区切り**（`C:/root/files/resource/XML/...`）。JSON なので `%OT_RESOURCE_ROOT%\\Xml\\...` と
     **バックスラッシュを2重エスケープ**して張り替える（`/` のままでも Windows では通るが、repo 内 net48 側と表記が割れる）。
-  - **`//` コメント入り（JSONC）**。ASP.NET Core の JSON プロバイダはコメントを許容する＝**そのまま残す**
+  - **`//` コメント入り（JSONC）**。ASP.NET Core の JSON プロバイダはコメントを許容する＝**そのまま残す**。
+    コメント中の `C:/root/...`（「下の C:/root/... は…」）は動作に関係しないが、張り替えた後は実態と食い違うので、`%OT_RESOURCE_ROOT%`（番号付きならその名前）に合わせて直す
     （厳密な JSON パーサで整形し直すと壊れる）。
 - **core は net48 MVC より2キー多い**（`FxXMLTCDefinition`/`FxXMLTMInProcessDefinition`）＝同名サンプルでもランタイムで割れる。
   **前ラウンドで core の ⑥ が見落とされた実績あり**（傍証：`appsettings.json` が `C:/root/...` のままコミットされていた）。
