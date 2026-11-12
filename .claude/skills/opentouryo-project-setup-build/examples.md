@@ -84,11 +84,13 @@ $overlay = Join-Path $repo 'base2-overlay'   # present only when customizing 親
 # --- 1. ZIP acquisition (not git clone) ---
 # ★ pristine-build guard: an extract tree that a PREVIOUS run OVERLAID (base2)
 #   is reused as-is here and silently vendors a NON-pristine DLL (old OLE/ODBC or
-#   handler removals persist; the diff never shows in build output). For a pristine
-#   ref (no overlay this round) rebuild the tree. Same $extract is reused by the
-#   netcore script, so this guard applies there too.
-$Fresh      = $false   # set $true to force a clean re-extract (素の ref を焼くとき)
-$Redownload = $false   # ★ moving ref (develop) 用：set $true で <ref>.zip を消してから取得（展開ツリーも道連れ）
+#   handler removals persist; the diff never shows in build output). C:\otr is shared
+#   by several repos and "was it overlaid?" cannot be judged (Copy-Item keeps the
+#   timestamps), so ALWAYS re-extract. The overlay (if any) is re-applied in 1b.
+#   ★ 作り直す前に、展開ツリーで直接直した親クラス2 を base2-overlay\ に写してあること（写していない改変は消える）。
+$Fresh      = $true    # 毎回作り直す（既定。SKILL §1）。リポに前の回のスクリプトがあり -Fresh がスイッチ（既定 off）なら、-Fresh を付けて呼ぶ（実測）
+$Redownload = $false   # ★ moving ref (develop) 用：set $true で <ref>.zip を消してから取得（展開ツリーも道連れ）。
+                       #   計画が「既存」の ZIP を使うと言うときは $false のまま（ハッシュは build-ref.txt に残る）
 New-Item -ItemType Directory -Force -Path $work | Out-Null
 # ★「作業ツリーの作り直し」($Fresh) と「ZIP の取り直し」($Redownload) は別操作。
 #   develop のような moving ref は $Redownload を付けないと、上流が動いても古い ZIP が使われ続ける
@@ -204,10 +206,10 @@ $extract = Join-Path $work "OpenTouryo-$ref"
 $cs      = Join-Path $extract 'root\programs\CS'
 $vendor  = Join-Path $repo 'OpenTouryoAssemblies\Build_netcore100'
 $needRichClient = $true   # 標的が 2CS / rich client（TFM net10.0-windows7.0）なら true。Web/MVC/Bat/CLI は false
-# ★ net48 と同じ2つ。net48 を同じ回で先に走らせたなら $false のまま（展開ツリーを流用する）。
-#   **net10.0 だけの repo（net48 を走らせない）では、ここで指定する**＝moving ref は $Redownload、
-#   前回 overlay を当てた展開ツリーを素で焼くなら $Fresh（指定しないと古い／素でない展開ツリーをそのまま焼く・実測）。
-$Fresh      = $false
+# ★ net48 と同じ2つ。**同じセットアップで net48 を先に走らせたときだけ $Fresh=$false**（net48 が作り直したツリーを流用する）。
+#   net10.0 だけの repo（net48 を走らせない）では $Fresh=$true のまま（共有の C:\otr に別リポの overlay が残りうる・実測）。
+#   moving ref は $Redownload（計画が「既存」の ZIP を使うと言うときは $false のまま）。
+$Fresh      = $true
 $Redownload = $false
 $zip = Join-Path $work "OpenTouryo-$ref.zip"
 

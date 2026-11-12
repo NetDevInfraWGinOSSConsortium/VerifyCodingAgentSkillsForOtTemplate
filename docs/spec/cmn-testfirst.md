@@ -1,6 +1,6 @@
 # 基本的な処理の内容
 画面の機能を、**テスト先行**（`TESTING.md`）で実装する。いきなり実装しない。
-作る範囲は、対象ごとの仕様（例 [受注一覧 OrdTf](./test6-testfirst-OrdTf.md)）に書く。本書は、どの対象にも共通の決まりを書く。
+作る範囲は、対象ごとの仕様（例 [受注一覧 OrdTf](./test3-testfirst-OrdTf.md)）に書く。本書は、どの対象にも共通の決まりを書く。
 
 ## 仕様の出どころ（段 0 で読む）
 NorthwindDbSampleSpec（<https://github.com/OpenTouryoProject/NorthwindDbSampleSpec>）。
@@ -9,9 +9,9 @@ NorthwindDbSampleSpec（<https://github.com/OpenTouryoProject/NorthwindDbSampleS
 - **決定記録：`LLD/Decisions`**。本文は意図的に不完全なまま保たれていて、決まったことはここにある。**本文と合わせて読む**（食い違うときは決定記録が正）
 
 ## 役
-- **司令役**：最初に指示を受けるセッション。手順は [plan/test6-testfirst.md](../plan/test6-testfirst.md)。
-- **実装役**：サブ エージェント `opentouryo-test-implementer`（`.claude/agents`）。
-- **レビュー役**：サブ エージェント `opentouryo-test-reviewer`（`.claude/agents`）。実装役とは別のモデル。
+- **司令役**：最初に指示を受けるセッション。手順は [plan/cmn-testfirst.md](../plan/cmn-testfirst.md)。
+- **実装役**：サブ エージェント `opentouryo-test-implementer`（`.claude/agents`。Copilot は `.github/agents`）。
+- **レビュー役**：サブ エージェント `opentouryo-test-reviewer`（`.claude/agents`。Copilot は `.github/agents`）。実装役とは別のモデル。
 - **人**：仕様の決定だけを GO/NOGO で判断する（`TESTING.md` 5）。
 
 ## 決まり

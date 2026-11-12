@@ -1,5 +1,6 @@
 # セットアップのテスト
 まず、本セットアップで使用するZIPの branches/tags を決定する。
+1 で ZIP を取得する（develop なら取り直す）。2 以降の「(既存)」は、1 で取得した ZIP を取り直さずに使う（同じ回のケースで基盤を揃えるため）。
 
 ## 1
 /opentouryo-project-setup で MVC_Sample net48 / [branches/tags]を実行。 問題点は Reporting.md に書き出して下さい。

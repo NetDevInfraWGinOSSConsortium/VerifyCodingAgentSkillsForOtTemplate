@@ -42,7 +42,10 @@ metadata:
 （`[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12`）。
 `WebClient.DownloadFile()` は既定 TLS が古く **GitHub codeload に 404**（`HEAD` は 200 が返るので原因が紛れる＝実測）。
 
-**★ `develop`（moving ref）は ZIP を消して取得を強制する**（`examples.md` の `-Redownload`）＝古い ZIP を焼くと**0 エラーで「再取得した」と誤報告**になる（`-Fresh` の作業ツリー作り直しとは別操作・実測）。
+**★ `develop`（moving ref）は ZIP を取り直す**（`examples.md` の `$Redownload`。古い ZIP でも 0 エラー＝誤報告・実測）。**計画が「既存」と言うなら取り直さない**（同じ回で基盤を揃える）。ハッシュは `build-ref.txt` に残る。
+
+**★ 展開ツリーは毎回作り直す**（`$Fresh` 既定 true。共有の `C:\otr` に別リポの overlay が残っても判定できない・実測。同じセットアップの net48→net10.0 だけ流用。逆の順・別の日は作り直す）。
+**作り直す前に、展開ツリーで直した親クラス2 が `base2-overlay/` に写してあること**（写していない改変は消える）。
 
 **作業ツリーの置き場所は MAX_PATH(260) を避けて選ぶ**（実測）。既定はリポジトリ直下の `Temp\` だが、
 **リポジトリ パスが深いと net48 Business ビルドが `MSB3553` で失敗する**：生成物
@@ -53,13 +56,10 @@ metadata:
 
 ### ★ 親クラス2 をカスタマイズするなら、短ルートの展開ツリーをワークスペースに加えて直接いじる（コピーバックは廃止）
 
-**親クラス2 をカスタマイズする（`base2-overlay/` がある、またはこれから作る）なら、短ルート `C:\otr\` を
-ワークスペースに追加し、そこの基盤ソースを直接編集・ビルドする。** カスタマイズ対象の基盤ソース
-`Frameworks\Infrastructure`（特に `Business`）は、ビルドのために展開した
-**`C:\otr\OpenTouryo-<ref>\root\programs\CS\Frameworks\Infrastructure` に既に在る**。
-
-以前の「深いリポへコピーバック」は**実測で繰り返し抜けた**ので廃止し、**展開ツリーをそのまま作業場所にする**：短ルート `C:\otr` を
-ワークスペースに追加し（VS Code なら「フォルダーをワークスペースに追加」）、絶対パス `C:\otr\...\Frameworks\Infrastructure` を直接読み書きする。
+**親クラス2 をカスタマイズする（`base2-overlay/` がある、またはこれから作る）なら、短ルート `C:\otr` を
+ワークスペースに追加し**（VS Code なら「フォルダーをワークスペースに追加」）、展開済みの
+**`C:\otr\OpenTouryo-<ref>\root\programs\CS\Frameworks\Infrastructure`**（特に `Business`）を直接編集・ビルドする
+（以前の「深いリポへコピーバック」は**実測で繰り返し抜けた**ので廃止）。
 
 - **深いリポへコピーしない**（MAX_PATH でどのみち深いリポではビルドできない）。基盤ソースの作業実体は `C:\otr` 側、
   **リポにコミットするのは差分 `base2-overlay/` だけ**（展開ツリーは使い捨て。取得元は固定タグ＝再現性。`opentouryo-base2-customize`）。
@@ -179,8 +179,7 @@ Community/Professional/Enterprise を網羅）。VS18 の BuildTools/Professiona
 - **アドホックなコマンド羅列で済ませる** — スクリプト化して **`scripts/` に**残す（ルート直置きにしない）
 - **作業ツリー `Temp/`（基盤ソース＝親クラス2 を含む）をコミットする** — `.gitignore` で除外
 - **`base2-overlay` があるのに `develop` で焼く** — 固定タグにする（再現性）
-- **★ 素の ref をビルドするのに、前回 overlay を適用した展開ツリーを再利用する** — 前回の親クラス2 改変が残り
-  **素でない DLL がベンダされる**（差分はビルド結果に出ず気付けない）＝**overlay 無しの素ビルドは展開ツリーを作り直す**（`examples.md` の `-Fresh` 相当）
+- **★ 展開ツリーを再利用する** — 別リポの親クラス2 改変が残り**素でない DLL がベンダされる**（ビルド結果に出ない）＝毎回作り直す（§1）
 - **★ 親クラス2 をカスタマイズするのに、短ルートの展開ツリーをワークスペースに入れない** — 基盤ソースは
   `C:\otr\OpenTouryo-<ref>\...\Frameworks\Infrastructure` に在る。深いリポへコピーせず、**短ルートをワークスペースに
   追加して直接いじる**（§1。コピーバックは実測で繰り返し抜けたため廃止）

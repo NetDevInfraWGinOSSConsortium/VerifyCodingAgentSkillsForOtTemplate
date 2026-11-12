@@ -1,6 +1,6 @@
 # opentouryo-test-e2e-web：コードの見本
 
-MVC_Sample（net10.0）で実測した形。`<Web>` は Web のプロジェクト名（例 `MVC_Sample`）。
+MVC_Sample（net10.0）で実測した形。net48（IIS Express）は末尾の節。`<Web>` は Web のプロジェクト名（例 `MVC_Sample`）。
 
 ## csproj（`<Web>.E2ETests/<Web>.E2ETests.csproj`）
 
@@ -194,31 +194,48 @@ namespace <Web>.E2ETests
         [SetUp]
         public async Task SetUpAsync()
         {
-            // テスト用の顧客と、その受注 25 件（20 件で 1 ページなら 2 ページ）。キーは列の型と書式に合わせて作る
-            // 受注日は B層のテスト（2199 年）と重ならない範囲（並行して動くため）
-            cust = new string(Enumerable.Range(0, 5).Select(_ => (char)('A' + Rnd.Next(26))).ToArray());
-            TestDb.Scalar("INSERT INTO Customers (CustomerID, CompanyName) VALUES (@c, @n)", ("@c", cust), ("@n", "E2E-" + cust));
-            for (int i = 0; i < 25; i++)
-                TestDb.Scalar("INSERT INTO Orders (CustomerID, EmployeeID, OrderDate, ShipVia, Freight) VALUES (@c, 1, @d, 1, 0)",
-                    ("@c", cust), ("@d", new DateTime(2198, 1, 1).AddDays(i)));
+            // NUnit は [SetUp] が例外のとき [TearDown] を呼ばない。データを入れた後で落ちたら、ここで後始末をして投げ直す
+            try
+            {
+                // テスト用の顧客と、その受注 25 件（20 件で 1 ページなら 2 ページ）。キーは列の型と書式に合わせて作る
+                // 受注日は B層のテスト（2199 年）と重ならない範囲（並行して動くため）
+                cust = new string(Enumerable.Range(0, 5).Select(_ => (char)('A' + Rnd.Next(26))).ToArray());
+                TestDb.Scalar("INSERT INTO Customers (CustomerID, CompanyName) VALUES (@c, @n)", ("@c", cust), ("@n", "E2E-" + cust));
+                for (int i = 0; i < 25; i++)
+                    TestDb.Scalar("INSERT INTO Orders (CustomerID, EmployeeID, OrderDate, ShipVia, Freight) VALUES (@c, 1, @d, 1, 0)",
+                        ("@c", cust), ("@d", new DateTime(2198, 1, 1).AddDays(i)));
 
-            context = await AppHost.Browser.NewContextAsync(new BrowserNewContextOptions { BaseURL = AppHost.BaseUrl });
-            page = await context.NewPageAsync();
+                context = await AppHost.Browser.NewContextAsync(new BrowserNewContextOptions { BaseURL = AppHost.BaseUrl });
+                page = await context.NewPageAsync();
 
-            // ログイン（アプリごとに、ログインの画面とコントローラを読んで書く）
-            await page.GotoAsync("/Home/Login");
-            await page.FillAsync("#UserName", "e2e");
-            await page.FillAsync("#Password", "x");
-            await page.ClickAsync("input[name=normal]");
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+                // ログイン（アプリごとに、ログインの画面とコントローラを読んで書く）
+                await page.GotoAsync("/Home/Login");
+                await page.FillAsync("#UserName", "e2e");
+                await page.FillAsync("#Password", "x");
+                await page.ClickAsync("input[name=normal]");
+                await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            }
+            catch
+            {
+                await CleanUpAsync();
+                throw;
+            }
         }
 
         [TearDown]
-        public async Task TearDownAsync()
+        public async Task TearDownAsync() => await CleanUpAsync();
+
+        /// <summary>後始末（[TearDown] と [SetUp] の失敗時の両方から呼ぶ）。途中までしか作れていなくても落ちない</summary>
+        private async Task CleanUpAsync()
         {
-            await context.CloseAsync();                       // ブラウザを閉じてから
-            TestDb.Scalar("DELETE FROM Orders WHERE CustomerID = @c", ("@c", cust));      // 子から消す
-            TestDb.Scalar("DELETE FROM Customers WHERE CustomerID = @c", ("@c", cust));
+            if (context != null) await context.CloseAsync();   // ブラウザを閉じてから
+            if (cust != null)
+            {
+                TestDb.Scalar("DELETE FROM Orders WHERE CustomerID = @c", ("@c", cust));      // 子から消す
+                TestDb.Scalar("DELETE FROM Customers WHERE CustomerID = @c", ("@c", cust));
+            }
+            // NUnit は 1 つのインスタンスを全テストで使い回す。フィールドを戻し、次のテストに持ち越さない（一覧なら Clear）
+            context = null; page = null; cust = null;
         }
 
         [Test, Basis("EV-ORD-104"), Basis("SC-ORD-01-B05")]
@@ -246,4 +263,112 @@ Microsoft.Playwright.PlaywrightException : Locator expected to be enabled
 Call log:
   - Expect "ToBeEnabledAsync" Locator("#pageNext") with timeout 5000ms
   - waiting for Locator("#pageNext")
+```
+
+## net48（IIS Express。MVC_Sample net48 で実測）
+
+csproj は上と同じ形で、`<TargetFramework>net48</TargetFramework>`（`Nullable` は書かない）、`Microsoft.Data.SqlClient` は Web の `packages.config` と同じ版。
+`AppHost` は、上の骨格のうち起動・停止だけを次に替える（ブラウザ・`TestContext.Progress` は同じ）。
+
+```csharp
+/// <summary>IIS Express のポート（固定。使われていたらテストを失敗にする）</summary>
+private const int Port = 8090;
+
+/// <summary>テストの出力（bin\Debug\net48）から Web のプロジェクトのフォルダ（Web.config のある所）へ</summary>
+public static string WebDir => Path.GetFullPath(Path.Combine(
+    TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "<Web>"));
+
+[OneTimeSetUp]
+public async Task StartAsync()
+{
+    // 前の回の IIS Express が残っていると、古いビルドに当たったまま 200 で通ってしまう
+    if (IsPortInUse(Port))
+        throw new InvalidOperationException("ポート " + Port + " は使用中（前の回の iisexpress が残っていないか確認する）");
+    BaseUrl = "http://localhost:" + Port;
+
+    string iis = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "IIS Express", "iisexpress.exe");
+    var psi = new ProcessStartInfo(iis, "/path:\"" + WebDir + "\" /port:" + Port + " /clr:v4.0")
+    {
+        UseShellExecute = false,
+        CreateNoWindow = true,
+    };
+    // Web.config が参照する変数を、テストを実行するシェルから明示で渡す
+    psi.EnvironmentVariables["OT_RESOURCE_ROOT"] = Environment.GetEnvironmentVariable("OT_RESOURCE_ROOT");
+    app = Process.Start(psi);
+
+    // ログインの要らない URL（MVC_Sample は /Home/Login。/Ping は Forms 認証で 302）が 200 を返すまで待つ
+    using (var http = new HttpClient())
+    {
+        var deadline = DateTime.Now.AddMinutes(3);
+        while (true)
+        {
+            if (app.HasExited) throw new InvalidOperationException("IIS Express が起動しなかった（exit " + app.ExitCode + "）");
+            try
+            {
+                var response = await http.GetAsync(BaseUrl + "/Home/Login");
+                if (response.StatusCode == HttpStatusCode.OK) break;
+            }
+            catch (HttpRequestException) { }
+            catch (TaskCanceledException) { }
+            if (DateTime.Now > deadline) throw new TimeoutException("アプリが応答しない: " + BaseUrl);
+            await Task.Delay(500);   // 起動の待ち合わせだけ。テストの中では固定の時間を待たない
+        }
+    }
+    // （ブラウザの用意は上と同じ）
+}
+
+[OneTimeTearDown]
+public async Task StopAsync()
+{
+    if (Browser != null) await Browser.DisposeAsync();
+    playwright?.Dispose();
+    if (app != null && !app.HasExited)
+    {
+        app.Kill();   // net48 の Process に entireProcessTree は無い（IIS Express は子のプロセスを持たない）
+        app.WaitForExit(10000);
+    }
+}
+
+/// <summary>ポートが使われているか（接続できる、または待ち受けを開始できない）</summary>
+private static bool IsPortInUse(int port)
+{
+    try
+    {
+        using (var c = new TcpClient())
+        {
+            var t = c.ConnectAsync(IPAddress.Loopback, port);
+            if (t.Wait(1000) && c.Connected) return true;
+        }
+    }
+    catch (Exception) { }
+    try
+    {
+        var l = new TcpListener(IPAddress.Loopback, port);
+        l.Start();
+        l.Stop();
+        return false;
+    }
+    catch (SocketException) { return true; }
+}
+```
+
+`TestDb` の接続文字列は `Web.config` から読む（`using System.Linq; using System.Xml.Linq;`）。
+
+```csharp
+string path = Path.Combine(AppHost.WebDir, "Web.config");
+connectionString = XDocument.Load(path).Root
+    .Element("connectionStrings").Elements("add")
+    .First(e => (string)e.Attribute("name") == "ConnectionString_SQL")
+    .Attribute("connectionString").Value;
+```
+
+並行で全件を流す runsettings（例 `scripts\parallel.runsettings`。`dotnet test <B層 dll> <E2E dll> -s <これ>`）：
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <MaxCpuCount>0</MaxCpuCount>
+  </RunConfiguration>
+</RunSettings>
 ```

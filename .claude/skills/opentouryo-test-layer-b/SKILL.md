@@ -47,8 +47,9 @@ B層の書き方そのものは `opentouryo-layer-b`、呼び出し方は `opent
    Web の `appsettings.json` は、参照しただけでテストの出力へ写る（実測）。
 4. `[Basis]`・`[Observation]` の定義（`QualityAttributes.cs`）を写す。
 5. ソリューションへの追加：**net10.0** は `dotnet sln <sln> add <Tests の csproj>`。
-   **net48 は `dotnet sln add` が使えない**（Web のプロジェクトを評価できずに失敗する。実測）。sln へは Visual Studio で追加する。
-   どちらも、テストのビルドと実行は **csproj を直接指定**すれば sln に無くてもできる。
+   **net48 は `dotnet sln add` が使えない**（Web のプロジェクトを評価できずに失敗する。実測）。**net48 は sln に加えない**
+   （加えるには Visual Studio での人の操作が要る）。テストのビルドと実行は **csproj を直接指定**すれば sln に無くてもできる
+   （`MSBuild.exe <csproj> -restore` → `dotnet test <csproj> --no-build`。E2E と並行で全件を流すのは `opentouryo-test-e2e-web` の「実行」）。
 
 ## 実行する
 
@@ -98,6 +99,7 @@ B層の書き方そのものは `opentouryo-layer-b`、呼び出し方は `opent
    - 書式の決まったコードの列（固定長・使える文字が決まっている）：その書式でランダムに作る（根拠は仕様の書式の決まり）
    - IDENTITY の列：値を作らない。`INSERT …; SELECT CAST(SCOPE_IDENTITY() AS int);` を 1 つのコマンドで実行して受け、それで絞る・消す（実測）
 2. 前提のデータが要るなら `[SetUp]` で入れる。**`[TearDown]` で、そのキーのデータを消す**（失敗したテストの後でも消える）。
+   ただし **`[SetUp]` が例外だと `[TearDown]` は呼ばれない**＝複数の行を入れる途中で落ちうるなら、`[SetUp]` の中で後始末して投げ直す。
    **親子のあるデータは子から消す**（例：明細 → 受注 → 顧客。外部キーがあると、親から消すと失敗する）。
 3. 準備・後始末・DB の状態の確かめには、**テストから直接 `SqlConnection`** を使う
    （接続文字列は `GetConfigParameter.GetConnectionString("ConnectionString_SQL")`。アプリの設定と同じものが読める。実測）。

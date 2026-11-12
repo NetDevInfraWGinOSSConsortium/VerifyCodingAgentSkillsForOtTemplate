@@ -41,7 +41,10 @@ HintPath が他サンプルのビルド出力（`..\..\..\WS_sample\Build\...`�
 - **対処**：moving ref を再取得・再ベンダしたら、**アプリの `PackageReference`／`packages.config` を基盤の `.csproj` と突き合わせて版を合わせる**。
 - **合否判定は「エラー0」でなく「警告0＝`MSB3277` が出ていないこと」**にする（`opentouryo-project-setup-build` の run-verify）。
   「ビルドは通るのに実行で落ちる」型＝AGENTS.md「MS 系開発ツールの落とし穴」の系列。固定タグは版が動かないので不要。
-- **どの版に合わせるかは面によって別**：実測では **net48 側の基盤は 6.0.2 のままでアプリ（`packages.config`）とも一致＝影響は netcore100 のみ**だった。両面を各々突き合わせる。
+- **どの版に合わせるかは面によって別**。両面を各々突き合わせる。net48 は、2026-11-11 の develop で**基盤 `Public_net48.csproj` が 6.0.2、
+  サンプル（`MVC_Sample`・`WebForms_Sample` の `packages.config`）が 7.0.0 と、アプリの方が新しい**。サンプルの `Web.config` に
+  `bindingRedirect 0.0.0.0-7.0.0.0 → 7.0.0.0` があるので実行時は 7.0.0 に寄り、`MSB3277` も出ず DB 到達まで動いた（MVC_Sample で実測）。
+  **アプリの方が新しく `bindingRedirect` があるなら、版を下げない**（netcore100 の逆の向きとは扱いが違う）。
 
 **※ 例外＝`WSServer_sample`/`WSIFType_sample` は DLL 張替の対象外**（ベンダ先 `Build_*\` に含まれない＝サンプル自身の
 B・D層/型）。これらは **ProjectReference に切り替える**（`WS_sample\Build\*.dll` の DLL 参照は削除。`samples/webservices.md`）。

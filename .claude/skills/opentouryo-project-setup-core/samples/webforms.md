@@ -19,6 +19,9 @@
   なので ProjectReference にはできない＝ベンダ先 `Build_net48\` への DLL 参照に張り替える**（`references/reference-rewrite.md`）。
   **★ (A) では `WebForms_Sample.sln` にも `WSIFType_sample`/`WSServer_sample` の2プロジェクトを追加**し、
   `<ProjectReference>` の `<Project>` GUID を参照先 `<ProjectGuid>` に一致させる（`webservices.md`「ProjectReference 化の共通注意」）。
+- (A) の成否を実行で確かめられるのは、3 層の画面 **`Aspx/sample/crud/sampleScreen_cc.aspx`** だけ（`ddlCmctCtrl`＝`testInProcess` で、bin の `WSServer_sample.dll` をインプロセスで呼ぶ）。
+  ほかの 2 つの値（`testWebService4`・`testWebService3`）は WS ホストが要る。⑦の手順は `opentouryo-project-setup-config` の `references/run-verify.md`。
+- 取り出した `WS_sample\WSServer_sample\WSServer_sample.sln`（源に付いている単独の sln）は、残してよい（アプリは `WebForms_Sample.sln` を使う。新しい配置でもパスは解決する）。
 
 ## config は二段構成（初見で `Web.config` を探して迷う）
 

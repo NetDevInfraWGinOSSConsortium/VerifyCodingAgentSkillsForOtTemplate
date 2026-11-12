@@ -22,10 +22,17 @@
 | `FxLog4NetConfFile` | `%OT_RESOURCE_ROOT%\Log\SampleLogConf.xml`（ログ定義ファイルの**場所**） |
 | `FxXMLSPDefinition` / `FxXMLMSGDefinition` / `FxXMLSCDefinition` / `FxXMLTCDefinition` / `FxXMLTMProtocolDefinition` / `FxXMLTMInProcessDefinition` | `%OT_RESOURCE_ROOT%\Xml\*.xml` |
 | `SqlTextFilePath` | `%OT_RESOURCE_ROOT%\Sql`（**※同梱型は例外＝下記**） |
-| `SpRp_RsaCerFilePath` | `%OT_RESOURCE_ROOT%\X509\*.cer` |
+| `SpRp_RsaCerFilePath` / `SpRp_RsaPfxFilePath` | `%OT_RESOURCE_ROOT%\X509\*.cer` / `*.pfx` |
 | `TestFilePath` | `%OT_RESOURCE_ROOT%\Test`（実測で WebForms `app.config` に存在。**綴りは ref で割れる**＝実フォルダ `Test` に合わせる。現行 develop は `Test`） |
 
-**★ ただしこの表を全部前提にしない。** キー集合はサンプル/ランタイムで違う（下記「キー集合・綴り・区切り」）＝**config に在るキーだけ**張り替える。
+**★ ただしこの表を全部前提にしない。** キー集合はサンプル/ランタイムで違い、ref が進むとキーが増える（実測：develop の core MVC で
+`SpRp_RsaPfxFilePath` が増えた）＝**表はキーの例。張り替える対象はキー名ではなく値で決める**：
+
+1. config の**値に絶対パス `C:\root\` / `C:/root/` を持つキーを全部**張り替える（`C:\root\files\resource\` の後ろはそのまま残す）。
+   表に無いキーも張り替える。相対・埋め込み・`.\Dao` は絶対パスでないので、この決め方で自然に対象外になる（下記の例外）。
+2. 張り替えた後、config に `C:\root` / `C:/root` が**値として残っていないこと**を検索で確かめる（コメント中は下記 core の項のとおり直す）。
+3. **表と実物が違ったら**（表に無いキー・数の違い・参照先のフォルダが無い）、張り替えは実物に合わせて行い、違いを**問題点として報告**する
+   （スキルの表を直す材料。参照先の `resource\` のフォルダやファイルが無いなら、張り替えずに止めて人に聞く）。
 
 ## 相対パスは不可
 
@@ -70,12 +77,14 @@ IIS Express / w3wp の CWD はアプリ フォルダでないため 500 にな�
   ```xml
   <file type="log4net.Util.PatternString" value="%env{OT_RESOURCE_ROOT}\Log\ACCESS" />
   ```
-- **NLog**：NLog の環境変数展開 **`${OT_RESOURCE_ROOT}`** を使う（as-built テンプレート `NLogConfigTemplate.xml` の書式）：
+- **NLog**：`fileName` は NLog の環境変数の書式 **`${environment:OT_RESOURCE_ROOT}`**（`${名前}` は NLog 自身の変数を指し、環境変数は展開されない）。
+  `internalLogFile` は `%OT_RESOURCE_ROOT%`：
   ```xml
-  <nlog ... internalLogFile="${OT_RESOURCE_ROOT}\Log\NLogInternalLog.log">
-    <target xsi:type="File" name="ACCESS" fileName="${OT_RESOURCE_ROOT}\Log\ACCESS..." ... />
+  <nlog ... internalLogFile="%OT_RESOURCE_ROOT%\Log\NLogInternalLog.log">
+    <target xsi:type="File" name="ACCESS" fileName="${environment:OT_RESOURCE_ROOT}\Log\ACCESS..." ... />
   ```
-  テンプレート `resource\Log\NLogConfigTemplate.xml` の `（★ファイルパス）` を上の `${OT_RESOURCE_ROOT}\Log\...` に埋める。
+  実物のテンプレート `NLogConfigTemplate.xml` は `internalLogFile` が絶対パス `C:\root\...`、`fileName` が `（★ファイルパス）`（環境変数は使っていない）。
+  **未実測**（NLog を使うサンプルで実行して確かめていない）＝NLog を使うなら、張り替えた後にログが `resource\Log` に出ることを確かめる。
 
 ## ★ キー集合・綴り・区切りはサンプル/ランタイムで割れる（決め打ち禁止）
 
@@ -83,9 +92,11 @@ IIS Express / w3wp の CWD はアプリ フォルダでないため 500 にな�
 
 | サンプル | config | パス系キー数 | 綴り | 区切り | 特記 |
 | --- | --- | --- | --- | --- | --- |
-| WebForms(net48) | `app.config` | 約11 | `Xml`/`Test`（ref 依存） | `\` | `TestFilePath` 有 |
-| MVC(net48) | `app.config` | 5 | `Xml` | `\` | — |
-| MVC(core) | `appsettings.json` | 7 | `Xml`（ref 依存） | **`/`** | `FxXMLTCDefinition`/`FxXMLTMInProcessDefinition` が増える |
+| WebForms(net48) | `app.config` | 12（develop・2026-11） | `Xml`/`Test`（ref 依存） | `\` | `TestFilePath` 有 |
+| MVC(net48) | `app.config` | 6（develop・2026-11） | `Xml` | `\` | — |
+| MVC(core) | `appsettings.json` | 8（develop・2026-11） | `Xml`（ref 依存） | **`/`** | `FxXMLTCDefinition`/`FxXMLTMInProcessDefinition`/`SpRp_RsaPfxFilePath` が増える |
+
+キー数は実測した時点の値（ref が進むと変わる）。張り替えの対象は上の「値で決める」で決め、この数で決めない。
 
 - **★ 綴り（`Xml`/`Test`）は ref で割れる＝必ず実測して実フォルダに合わせる**（値を決め打ちしない。過去 ref には `XML`/`test` があり、現行 develop は `Xml`/`Test`＝実フォルダと一致し修正不要）。Windows は綴り無視だが **Linux で core を動かすなら実フォルダの綴りに合わせる**（WS ホストの綴りについて同 md が既にそう書いているのと同じ扱い）。
 - **core（`appsettings.json`）固有**：

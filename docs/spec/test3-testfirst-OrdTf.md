@@ -1,5 +1,5 @@
 # 受注一覧（OrdTf）
-[共通の決まり](./test6-testfirst.md)に従い、受注一覧画面の次の範囲を、テスト先行で作る。
+[共通の決まり](./cmn-testfirst.md)に従い、受注一覧画面の次の範囲を、テスト先行で作る。
 
 ## 作る範囲（仕様の ID）
 - 画面：`SC-ORD-01`（`I01`〜`I08`、`B01`、`B05`）
@@ -19,6 +19,6 @@ ProgramID は **`OrdTf`**（テスト先行。トランザクション2 の `Ord
 | B層のルート メソッド | `MethodName` = `OrdTfInit`（選択肢）・`OrdTfSearch`（検索。ページは `PageNo`） |
 | 引数クラス・戻り値クラス | `OrdTfParameterValue`・`OrdTfReturnValue` |
 | テストのプロジェクト・クラス | `<Webプロジェクト名>.Tests`・`OrdTfBusinessTests`、`<Webプロジェクト名>.E2ETests`・`OrdTfScreenTests` |
-| テスト仕様 | `docs/spec/test6-testfirst-OrdTf-<フレームワーク>-tests.md`（例 `…-OrdTf-mvc-core-tests.md`） |
-| 計画 | `docs/plan/test6-testfirst-OrdTf-<フレームワーク>.md` |
-| 決定のレポート | `docs/spec/test6-testfirst-OrdTf-<フレームワーク>-decisions.md`（人が GO/NOGO を書き込む） |
+| テスト仕様 | `docs/spec/test3-testfirst-OrdTf-<フレームワーク>-tests.md`（例 `…-OrdTf-mvc-core-tests.md`） |
+| 計画 | `docs/plan/test3-testfirst-OrdTf-<フレームワーク>.md` |
+| 決定のレポート | `docs/spec/test3-testfirst-OrdTf-<フレームワーク>-decisions.md`（司令役が書き、人の判断を対話で聞いて書き込む） |

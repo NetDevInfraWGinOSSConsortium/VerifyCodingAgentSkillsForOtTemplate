@@ -286,7 +286,11 @@ GetConfigParameter.InitConfiguration(configuration);
 - **★ `@section` の中身は `@RenderBody()` の外に描画される。** レイアウトの `@RenderSection` 位置に出るため、ビューで
   `Html.BeginForm` の `using` ブロック内に置いても、生成 HTML では `<form>` の**外**に出る。`type="submit"` はフォーム外だと
   **押しても何も起きない**（実測：フッタ［件数確認］が無反応）。→ **`@section` に置く submit には HTML5 の `form="<フォームID>"` を付けて明示的に紐付ける**。
-  Web Forms は `<form runat="server">` がマスタページ全体を包むので起きない＝**MVC 固有**。検証は `references/run-verify.md`（アクション URL への直接 POST だけで判定しない）。
+  Web Forms は `<form runat="server">` がマスタページ全体を包むので起きない＝**MVC 固有**。
+- **★ `文字@式文字` は式にならない**（Razor の構文。両ランタイム）：`全@Model.TotalCount件` は前後が文字なのでメール アドレスとみなされ、
+  **そのまま文字で出る**（実測）。文字に挟むときは `全@(Model.TotalCount)件` と括弧で囲む。
+- **net48 の `sessionState` は `StateServer`**（`opentouryo-project-setup-config` ⑦）＝**Session に入れる型は `[Serializable]`** が要る
+  （無いと保存時に落ちる）。属性を付けられない型は、JSON 文字列にして入れる。検証は `references/run-verify.md`（アクション URL への直接 POST だけで判定しない）。
 - **★ net48 MVC のビューは UTF-8 BOM が必須**（`.cshtml`）。net48 MVC の `Web.config` には **`<globalization fileEncoding>` が無く**
   （WebForms サンプルには有る）、BOM 無し UTF-8 を実行時 Razor が OS コードページ（Shift-JIS）で誤読して**画面テキストが文字化け**する。
   しかも CP932 の2バイト目が直後の ASCII（`</button>` の `<` 等）を食ってタグを壊し**ボタンも動かなくなる**——ビルドも `aspnet_compiler` も素通りする。`opentouryo-comment-convention`。

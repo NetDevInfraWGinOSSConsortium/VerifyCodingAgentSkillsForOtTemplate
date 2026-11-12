@@ -31,6 +31,10 @@
 
 - `Aspx/Framework/Ping.aspx` … 未認証で **302**（→ login へ）。正常。
 - `Aspx/start/login.aspx` … **200** でログインフォームが描画されれば OK。
+- **ログイン**（WebForms_Sample。実測）：GET した hidden 全件に、`ctl00$ContentPlaceHolder_A$txtUserID`・`txtPassword`・`btnButton1` を載せて POST。
+  利用者 ID が空でなければ認証され、**302 → `menu.aspx`** なら OK（name は接頭辞が変わりうるので、末尾一致で拾う）。
+- **DB 到達**：`Aspx/sample/crud/sampleScreen.aspx`（2 層）と `sampleScreen_cc.aspx`（`ddlCmctCtrl=testInProcess`。WS を (A) にした成否）で、
+  マスタ上の `ctl00$btnMButton1`＝`SelectCount` を押し、応答に「N件のデータがあります」が出れば OK（下の「hidden を全件返す」と併用）。
 - **★ 初回リクエストは待つ**：ビルド直後の**初回リクエストは初回コンパイル**（WebForms＝`.aspx` コンパイル／core＝JIT・起動）で
   **30 秒を超える**ことがある（実測：`/Ping/Index` が 30s タイムアウト→ウォーム後は正常）。**タイムアウト＝失敗と誤判定しない**
   ＝初回は **120s 程度のタイムアウト**にするか、**1発ウォームアップしてから判定**する。
@@ -105,7 +109,8 @@ dotnet run --project "<repo>\MVC_Sample_Core\MVC_Sample" --urls http://localhost
 
 **★ core MVC のスモーク判定は net48 と違う**：`HomeController` は class に `[Authorize]` だが `Index`/`Login` は `[AllowAnonymous]`、
 `PingController` は素の `Controller`（`[Authorize]` 無し）＝**`/`・`/Home/Index`・`/Home/Login`・`/Ping/Index` はすべて 200**
-（未認証でも 302 にならない。**net48 MVC は `Ping/Index`=302**＝同名サンプルでもランタイムで違う）。
+（未認証でも 302 にならない。**net48 MVC は `Web.config` の `<deny users="?"/>`（Forms 認証）で、`/`・`/Home/Index`・`Ping/Index` も未認証では 302→`/Home/Login`、
+`/Home/Login` だけ 200**＝同名サンプルでもランタイムで違う。実測）。
 **判定は「200 が返り、かつ `ACCESS` ログにフィルタのトレース（`OnActionExecuting` 等）が出ること」**＝ログに出て初めて
 基盤初期化（`%OT_RESOURCE_ROOT%` 解決）の成功が言える（200 だけでは resource/config 解決の成否は分からない）。
 500＝resource/config 解決失敗の見方は net48 と同じ。**core は `InitConfiguration()` 必須**（⑦）。
@@ -114,6 +119,7 @@ dotnet run --project "<repo>\MVC_Sample_Core\MVC_Sample" --urls http://localhost
 （`name="__RequestVerificationToken"` の hidden ＋ 同名 Cookie）を拾い、それを載せて **POST /Home/Login** → **セッション（Cookie）を維持**して
 **POST /Crud1/SelectCount**（`DdlIso=RC` を明示＝先頭 `NC` を避ける）。成功＝「3件のデータがあります」＋`SQLTRACE` に `SELECT COUNT(*)`。
 **トークンと Cookie を引き回さないと弾かれる**（WebForms の hidden 全件返しと対の、MVC 版の非対話手順）。
+**core の `POST /Home/Login` は 302 ではなく 200 を返す**（実測。net48 MVC は 302→`/Home`）＝ログインの成否はその応答で判定せず、続く `/Crud1/...` が通ることで判定する。
 - **★ ログインのフォーム項目名**（net48/core 共通・実測）：ユーザ名＝**`UserName`**（`UserId` ではない）／**submit ボタン名 `normal` も送る**（`HomeController.Login` は `Request.Form.Keys.Any(x=>x=="external")` で分岐＝通常ログインは `normal`）。`Crud1/SelectCount` の項目は `DdlDap`/`DdlMode1`/`DdlMode2`/`DdlIso`/`DdlExRollback`。
 - **★ core は日本語をエンコードして返す＝判定前にデコードする**（ランタイム非対称）：**Razor 出力は数値文字参照**（`3&#x4EF6;…`）＝リテラル「3件のデータがあります」を検索すると0件で**成功を失敗と誤判定**。さらに **`@Json.Serialize`（JS ダイアログ経路）は `System.Text.Json` 既定で非 ASCII を `\uXXXX` にエスケープ**する。→ **判定は HTML エンティティと `\uXXXX` の両方をデコードしてから照合**する（net48 は素のまま返る＝デコード不要。画面はブラウザが復元＝アプリの不具合ではない）。
 

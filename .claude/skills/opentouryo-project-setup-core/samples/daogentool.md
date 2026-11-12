@@ -13,7 +13,8 @@
 - net48：`DaoGen_Tool.csproj` / `.sln`（msbuild）。
 - net10.0：`DaoGen_ToolCore.csproj` / `.sln`（`net10.0-windows7.0`＝Windows 専用。`dotnet build`）。
 
-標的サンプルのランタイムに合わせてどちらかを使えばよい（DAO 生成が目的なので net48 版だけでも足りる）。
+**リポの標的ランタイムの csproj・sln だけを取り出す**（もう一方は取り出さない）。net48 と net10.0 の両方を持つリポなら両方。
+net10.0 だけのリポには `Build_net48` がベンダされないので、net48 版は置いてもビルドできない（実測）。`DPQuery_Tool` も同じ扱い。
 
 ## 取り出しと参照張り替え（⑤ と同じ要領）
 

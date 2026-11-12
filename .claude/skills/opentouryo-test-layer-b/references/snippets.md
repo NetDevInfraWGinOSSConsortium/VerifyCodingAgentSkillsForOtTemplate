@@ -168,7 +168,8 @@ namespace <名前空間>.Tests
         {
             // キーは列の型と書式に合わせる（SKILL の「データの準備と後始末」）。これは幅のある文字列の列（nvarchar(40)）の例
             key = "T-" + Guid.NewGuid().ToString("N").Substring(0, 10);
-            // 前提のデータが要るなら、ここで key を使って入れる（Exec を参照）
+            // 前提のデータが要るなら、ここで key を使って入れる（Exec を参照）。
+            // 複数の行を入れるなら try で囲み、例外のときは TearDown() を呼んでから投げ直す（[SetUp] が例外だと [TearDown] は呼ばれない）
         }
 
         [TearDown]

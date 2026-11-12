@@ -29,6 +29,7 @@ ZIP の**サブツリーだけを選択展開**するとき、`unzip ".../<sampl
 （墨壺＝D層自動生成）と `DPQuery_Tool`（動的クエリ試験）を取り出し対象に含める（DAO 自動生成・動的 SQL は標準ワークフロー）。
 **取り出し先は `OT_Tools\DaoGen_Tool\` / `OT_Tools\DPQuery_Tool\` に固定**（`OT_Tools\` 配下にまとめる。
 HintPath は2階層＝`..\..\`。`samples/daogentool.md` / `samples/dpquerytool.md`）。
+**net48 版（`*.csproj`）と Core 版（`*Core.csproj`）は、リポの標的ランタイムの方だけ取り出す**（両方を持つリポなら両方）。
 ⑤ と同様に張り替えるが、**両ツールは `HintPath`＋`PackageReference` 混在で net48 でも restore が要る**
 （`Microsoft.Data.SqlClient` 等。漏れは `CS0234`）。詳細は `samples/daogentool.md` / `samples/dpquerytool.md`。
 
@@ -63,7 +64,7 @@ HintPath は2階層＝`..\..\`。`samples/daogentool.md` / `samples/dpquerytool.
   1ソリューションでビルド**（旧「`WS_sample\Build\` へ DLL 配置」は不要）。**セットアップで完結**。詳細＝`samples/webservices.md`。
 - **(B) WS 依存を切り離す** — WS 参照を外す（**後工程 `opentouryo-project-transform`**）。
 
-**(A)/(B) の選択・層の削減・画面改変は、セットアップ中に判断を求めない**（開ける状態の後に利用者が決める）。
+**(A)/(B) の選択・層の削減・画面改変は、セットアップ中に判断を求めない**（開ける状態の後に利用者が決める）。**セットアップは (A) で進める**（(B) は後工程）。
 **WS/3層の共通手順は `samples/webservices.md`、サンプル固有は `samples/<サンプル>.md`**（Web Forms は `samples/webforms.md`、MVC は `samples/mvc.md`）。
 
 <!-- 執筆者メモ（Claude Code は読み込み時に除去）：samples/<サンプル>.md は検証したサンプルから順に整備する残件。
