@@ -43,6 +43,8 @@ WS/3層依存サンプルは、別サンプル **`WS_sample` の `WSIFType_sampl
     改行/アンカー不一致だと **`Project(...)` 行は入っても `ProjectConfigurationPlatforms` 行だけ無反応**になり、
     しかも **ProjectReference 経由でビルドは通る＝偽の成功**（VS で開いて初めて構成欠落が判明する）。
     → **追加後、`GlobalSection(ProjectConfigurationPlatforms)` 内の当該 GUID の行（＝構成数×2）を数えて実際に入ったか検算する**。
+  - **★ 挿し込む位置は行で探す**：`Project(...)` 行は**最後の `EndProject` 行の直後**に足す。`Global` を文字列で探すと `EndGlobal` にも当たり、
+    sln の末尾が壊れる（実測）＝探すなら行全体が `Global` の行（正規表現 `^Global\r?$`）。
   - **★ 行の「右辺」に何を書くか＝ソリューション構成 ≠ プロジェクト構成**（これを間違えるとビルドが落ちる）。`_all.sln` のソリューション構成は **8 種**（`Debug\|.NET`/`Debug\|Any CPU`/`Debug\|Mixed Platforms`/`Debug\|x86` ×2）だが、`WSIFType_sample`/`WSServer_sample` の csproj が持つのは **`AnyCPU` だけ**。素直に恒等写像（`{GUID}.Debug\|Mixed Platforms.ActiveCfg = Debug\|Mixed Platforms`）を書くと **`BaseOutputPath/OutputPath プロパティが設定されていません`（`Platform='Mixed Platforms'`）でビルド失敗**。→ **同じ sln の既存プロジェクト（client/WCFService/ASPNETWebService）の行を雛形にして GUID だけ差し替える**（既存は 8 構成すべてを `Any CPU` へ写像している。**恒等写像にしない**）。源の 3proj sln に**最初の WS を追加する経路**でこれを踏む。
 - **`<Project>` GUID を参照先と一致させる。** `<ProjectReference>` の `<Project>{GUID}</Project>` は
   **参照先 csproj の `<ProjectGuid>` と一致**させる（ずれると VS が再解決・警告）。
@@ -149,13 +151,14 @@ variant の csproj を見て分岐する**（実測：Win/WPF/WinCone は WS 依
   （源の階層維持＝リポ直下に出さない）。WS 非依存なのは「参照の張替」の話で、置き場所は WSClient 派生と一律。よって
   `OpenTouryo.*` の HintPath は他 variant と同じ **3階層 `..\..\..\OpenTouryoAssemblies\Build_net48\`**（トップ直下＝`..\` にしない）。
 
-**★ WSClient 4 variant の実測表（タグ 03-20・4種すべて実ビルド済み。依存形は3種＝名前で決め打ち不可の決定版）**：
+**★ WSClient 4 variant の実測表（タグ 03-20・4種すべて実ビルド済み。依存形は3種＝名前で決め打ち不可の決定版）**。
+config の絶対パスのキーの数は ref で変わる（develop＝2026-11 は Win 1・WPF 1・WinCone 0・Win2 0。`SpRp_RsaCerFilePath` が無くなった。実測）：
 
 | variant | client の WS 参照 | config 絶対パスキー | 構成 | 特記 |
 | --- | --- | --- | --- | --- |
-| `WSClientWin_sample` | WSServer＋WSIFType | 2（`SqlTextFilePath`＋`SpRp_RsaCerFilePath`） | 5proj | — |
+| `WSClientWin_sample` | WSServer＋WSIFType | 2（`SqlTextFilePath`＋`SpRp_RsaCerFilePath`）。develop は 1（`SqlTextFilePath`） | 5proj | — |
 | `WSClientWPF_sample` | WSServer＋WSIFType | 1（`SqlTextFilePath`） | 5proj | — |
-| `WSClientWinCone_sample` | **WSIFType のみ**（WSServer は client 非参照） | 1（`SpRp_RsaCerFilePath`） | 5proj | **ClickOnce＝署名で MSB3482→下記** |
+| `WSClientWinCone_sample` | **WSIFType のみ**（WSServer は client 非参照） | 1（`SpRp_RsaCerFilePath`）。develop は 0 | 5proj | **ClickOnce＝署名で MSB3482→下記** |
 | `WSClientWin2_sample` | なし（WS 非依存） | 0 | 単一 sln | 単独 P層 UI デモ |
 
 以下は「3層WSクライアント」（上表の 5proj 側＝Win/WPF/WinCone）の手順。②の取り出しとサンプル間 ProjectReference 化は
@@ -171,8 +174,8 @@ WinCone＝WSIFType のみ）＝csproj を見て張り替える。
    は **DLL 参照**で 元 `..\..\..\..\Frameworks\Infrastructure\Build\` → **`..\..\..\OpenTouryoAssemblies\Build_net48\`**（3階層）。
    **client が参照する WS プロジェクト（上表）を ProjectReference**（旧 `..\..\Build\*.dll` の DLL 参照を削除し `.csproj` へ。(A)2）。
 3. **⑥⑦ config は app.config に絶対 resource パスが在るキーだけを** `%OT_RESOURCE_ROOT%` 化する（**「2キー決め打ち」は誤り
-   ＝variant で全部違う**。実測4/4：Win=2〔`SqlTextFilePath`＋`SpRp_RsaCerFilePath`〕・WPF=1〔`SqlTextFilePath`〕・
-   WinCone=1〔`SpRp_RsaCerFilePath`〕・Win2=0。app.config を見て在るものだけ張り替える）。張替先は
+   ＝variant でも ref でも違う**。実測4/4（タグ 03-20）：Win=2〔`SqlTextFilePath`＋`SpRp_RsaCerFilePath`〕・WPF=1〔`SqlTextFilePath`〕・
+   WinCone=1〔`SpRp_RsaCerFilePath`〕・Win2=0。develop は Win=1・WPF=1・WinCone=0・Win2=0。app.config を見て在るものだけ張り替える）。張替先は
    `SqlTextFilePath`→`%OT_RESOURCE_ROOT%\Sql`・`SpRp_RsaCerFilePath`→`%OT_RESOURCE_ROOT%\X509\SHA256RSA_Server.cer`。
    **`FxXML*`（XML 定義）は `EmbeddedResource`＝張替不要**。
 

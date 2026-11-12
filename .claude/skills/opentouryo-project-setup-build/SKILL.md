@@ -96,7 +96,7 @@ Business.RichClient も含め**全部ビルドされる**。本スキルは標�
 `OpenTouryo.Business.RichClient`（`MyFcBaseLogic2CS` 等）を参照する**ので、`BusinessRichClient_net48.sln`
 （core は `_netcore100`）を追加でビルドしないと `CS0246`。**base2 カスタマイズの有無と無関係＝素の依存**
 （親クラス2 を 2CS カスタマイズする場合も同じ sln。`opentouryo-base2-customize`）。→ **RichClient 系サンプルなら ③ に
-このビルドを足す**（`examples.md` の 2b＝`setup-build-richclient.ps1` 相当。フル一式で回すなら不要）。
+このビルドを足す**（`examples.md` の 2b。別のスクリプトを足さず、同じ 1 本を `-RichClient` で回し直す）。
 
 **★ netcore は欠落範囲がさらに広い（実測）。** `net10.0-windows7.0\` は標準 `2_/3_Build_netcore100` 直後だと
 **`OpenTouryo.Business` と `Dam*`（`DamManagedOdp`/`DamMySQL`/`DamPstGrS`）まで無い**（`net10.0\` にはある）。

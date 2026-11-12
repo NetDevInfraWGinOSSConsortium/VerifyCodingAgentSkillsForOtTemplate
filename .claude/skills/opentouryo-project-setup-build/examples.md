@@ -42,10 +42,12 @@ SKILL 本文どおり、日本語コメントを含む `.ps1` を WinPS 5.1 で�
 下の2本（`setup-build.ps1`＝net48／`setup-build-netcore.ps1`＝netcore100）は**大半が重複**する。混在 repo
 （net48 済みに netcore100 を後から足す等）で毎回どちらを複製/改変するか迷わないよう、**`-Runtime net48|netcore100` の
 1本に畳む**（実測でそう直した）。**net48 の `setup-build.ps1` があるリポに net10.0 を足すときは、別のファイル（`setup-build-netcore.ps1` など）を足さず、
-その 1 本に `-Runtime` を足す**（実測：別ファイルにされた）。バッチ名・ベンダ先が規則的なので引数1本で導出できる：
+その 1 本に `-Runtime` を足す**（実測：別ファイルにされた）。**RichClient（2CS・`WSClient_*`）も同じ**：`setup-build-richclient.ps1` などを足さず、
+`-RichClient` を付けて同じ 1 本を回し直す（実測：別ファイルにされた。回し直すと展開ツリーを作り直して全部建て直す＝それでよい）。バッチ名・ベンダ先が規則的なので引数1本で導出できる：
 
 ```powershell
-param([ValidateSet('net48','netcore100')][string]$Runtime = 'net48')
+param([ValidateSet('net48','netcore100')][string]$Runtime = 'net48', [switch]$RichClient)
+$needRichClient = [bool]$RichClient   # 2CS / rich client (WSClient_*) を取り出したら -RichClient を付けて回し直す
 $vendor = Join-Path $repo "OpenTouryoAssemblies\Build_$Runtime"
 # バッチは 2_/3_Build_*_$Runtime.bat（例 3_Build_Business_$Runtime.bat / 3_Build_BusinessRichClient_$Runtime.bat）
 ```
@@ -58,8 +60,10 @@ $vendor = Join-Path $repo "OpenTouryoAssemblies\Build_$Runtime"
 - `setup-build.ps1` — 本スキル ①②③（ZIP取得 → net48 基盤ビルド → ベンダ）。短パス `C:\otr` でビルド、
   `OpenTouryo.Business.dll` の実在で成否判定。**親クラス2 をカスタマイズするなら任意ブロック**（overlay 適用＋
   2CS の `Business.RichClient` ビルド）を有効化する。
-- `build-app.ps1` — アプリ側の取り出し後ビルド（`opentouryo-project-setup` ④⑤）。**取り出した Web の sln を全部、この 1 本で建てる**
-  （サンプルごとに別のスクリプトを足さない。リストにある sln のうち、あるものだけを建てる）。net48 は `nuget restore` → msbuild、core は `dotnet build`
+- `build-app.ps1` — アプリ側の取り出し後ビルド（`opentouryo-project-setup` ④⑤）。**取り出した sln を全部、この 1 本で建てる**
+  （サンプルごとに別のスクリプト〔`build-webforms.ps1`・`build-wsclientwin.ps1` など〕を足さない。実測：毎回足された）。
+  **サンプルを取り出したら、その sln をリストに 1 行足す**（Web 以外も。WSClient は `_all.sln`。WS ホストの packages の別途 restore も、ここに足す＝`samples/webservices.md`）。
+  リストにある sln のうち、あるものだけを建てる。net48 は `nuget restore` → msbuild、core は `dotnet build`
   （`WSServer_sample`/`WSIFType_sample` は ProjectReference＝同ソリューションで同時に建つ）。vswhere で msbuild 解決。
   **開発支援ツールを取り出しているなら任意ブロック**（DaoGen/DPQuery のビルド）で欠落参照を早期に炙り出す。
 
@@ -136,8 +140,8 @@ try {
 # separate sln that no 2_/3_ script builds. This DLL is a *plain dependency* of the
 # 2CS (2CSClientWin/WPF) and 3-tier rich-client (WSClient_*) SAMPLES — required
 # whenever such a sample is used, INDEPENDENT of base2 customization. Without it
-# those samples fail with CS0246. (This is the `setup-build-richclient.ps1` step.)
-$needRichClient = $true    # set true when the target sample is 2CS / rich client, OR base2 customizes 2CS
+# those samples fail with CS0246. (Run the same script with -RichClient; do NOT add a separate script.)
+$needRichClient = $true    # set true when the target sample is 2CS / rich client, OR base2 customizes 2CS (= -RichClient)
 if ($needRichClient -or (Test-Path $overlay)) {
     $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
     $msb = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild `
@@ -192,7 +196,7 @@ $rc = ($needRichClient -or (Test-Path $overlay))
     Add-Content -Path (Join-Path $repo 'OpenTouryoAssemblies\build-ref.txt')
 ```
 
-## `setup-build-netcore.ps1`（net10.0 基盤ビルド → ベンダ）
+## net10.0 の部分（`-Runtime netcore100`。基盤ビルド → ベンダ。分かりやすさのため別に載せる＝別のファイルにしない）
 
 net48 版と同型で、回すバッチが `*_netcore100` になる。**混在ランタイム repo（net48 は既にベンダ済みで
 net10.0 だけ後から足す）では、既存の ZIP 展開ツリーを再 DL せず流用し、netcore のバッチだけ回す**。
@@ -235,7 +239,7 @@ try {
     cmd /c ".\3_Build_Business_netcore100.bat < nul"
     if ($LASTEXITCODE -ne 0) { throw "3_Build_Business_netcore100 failed ($LASTEXITCODE)" }
 
-    # 2b. RichClient (2CS / rich client の netcore サンプルで必須。setup-build-richclient-netcore.ps1 相当)。
+    # 2b. RichClient (2CS / rich client の netcore サンプルで必須。-RichClient のとき)。
     # ★ netcore は net10.0-windows7.0\ に Business / Dam* / Business.RichClient が「ここで初めて」出る
     #    （3_Build_Business_netcore100 直後は無い）。フォルダ丸ごと再ベンダするため、この後ベンダで上書きされる。
     if ($needRichClient) {   # 標的が 2CS / rich client（TFM net10.0-windows7.0）なら true
@@ -323,6 +327,7 @@ if (-not (Test-Path $nuget)) {
 if (-not $nuget) { throw "nuget.exe not found (tools\ or C:\otr\OpenTouryo-<ref>\root\programs\)" }
 
 # --- 1. restore + build the Web solutions that were taken out ---
+# Add one line per sample you take out (not only Web: e.g. WSClient's _all.sln).
 foreach ($rel in 'WebForms_Sample\WebForms_Sample.sln', 'MVC_Sample\MVC_Sample.sln') {   # net48 (packages.config)
     $wfSln = Join-Path $repo $rel
     if (-not (Test-Path $wfSln)) { continue }
