@@ -65,6 +65,8 @@ HintPath は2階層＝`..\..\`。`samples/daogentool.md` / `samples/dpquerytool.
 - **(B) WS 依存を切り離す** — WS 参照を外す（**後工程 `opentouryo-project-transform`**）。
 
 **(A)/(B) の選択・層の削減・画面改変は、セットアップ中に判断を求めない**（開ける状態の後に利用者が決める）。**セットアップは (A) で進める**（(B) は後工程）。
+**①′ で「B層を WS_sample に置いて共用する」を選んだら (C)**：WS の 2 つを取り出し、選んだ Web のすべて（MVC net48 の未使用の参照も含む）から ProjectReference する。
+ソースはリポジトリ直下の `Shared\` に置き、net48（`WS_sample`）と net10.0（`WS_sample_Core`）の csproj がリンクで取り込む。手順は `samples/webservices.md` の (C)。
 **WS/3層の共通手順は `samples/webservices.md`、サンプル固有は `samples/<サンプル>.md`**（Web Forms は `samples/webforms.md`、MVC は `samples/mvc.md`）。
 
 <!-- 執筆者メモ（Claude Code は読み込み時に除去）：samples/<サンプル>.md は検証したサンプルから順に整備する残件。

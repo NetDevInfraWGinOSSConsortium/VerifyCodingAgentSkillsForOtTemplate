@@ -76,6 +76,52 @@ WS/3層依存サンプルは、別サンプル **`WS_sample` の `WSIFType_sampl
 WS 依存が不要なら、後工程 **`opentouryo-project-transform`** で WS 参照を外し `CS0246` を潰す。
 画面が WS 側の型を `using` しているケースの差し替え等は**サンプル固有**（`<サンプル>.md`（同 `samples/` 配下） / transform）。
 
+## (C) B層を WS_sample に置いて共用する（①′ で選んだとき）
+
+B層・D層・引数と戻り値のクラスを、リポジトリ直下の **`Shared\`**（どのプロジェクトにも属さないソースの置き場）に置き、
+net48 と net10.0 の `WSServer_sample`・`WSIFType_sample` が**リンクで**コンパイルする。選んだ Web（MVC net48・MVC core・Web Forms）は、
+同じランタイムの 2 つを ProjectReference する。**P層が何であっても、B層は 1 か所に書けば両方のランタイムで共用できる。**
+呼び方は、ProjectReference したクラスを直接呼ぶ（`new <B層のクラス>().DoBusinessLogic(…)`。`CallController` は使わない）。
+
+```text
+<repo>\
+  Shared\IfType\     … 引数・戻り値のクラス（元 WSIFType_sample の .cs）
+  Shared\Business\   … B層（元 WSServer_sample\Business）
+  Shared\Dao\        … D層（元 WSServer_sample\Dao）
+  Shared\Common\     … 共通（元 WSServer_sample\Common）
+  WS_sample\{WSIFType_sample,WSServer_sample}\       … net48 の csproj と Properties\AssemblyInfo.cs だけ
+  WS_sample_Core\{WSIFType_sample,WSServer_sample}\  … net10.0 の csproj だけ
+```
+
+1. **2 つずつ写す**：`Samples\WS_sample` と `Samples4NetCore\Legacy\WS_sample` の `WSServer_sample`・`WSIFType_sample` を、
+   `<repo>\WS_sample\`・`<repo>\WS_sample_Core\` に写す（`bin`・`obj` は写さない）。
+   OpenTouryo の net48 版と net10.0 版の `.cs` は、`AssemblyInfo.cs` を除いて同じ（同じソースが両方でコンパイルできる。実測）。
+2. **ソースを `Shared\` に移す**：net48 側の `.cs` を上の表のとおりに移し、net10.0 側の `.cs` は消す（同じもの）。
+   **`Properties\AssemblyInfo.cs` は移さない**（net48 の csproj に残す。net10.0 の csproj は元から `Compile Remove="Properties\**"`）。
+3. **csproj にフォルダごとのリンクを書く**（ファイルごとに書かない）。csproj は `<repo>` から 2 段下なので `..\..\Shared`。
+   net48 は、移したファイルの `<Compile Include="Business\LayerB.cs" />` などを消して、`AssemblyInfo.cs` の行の後に置く。net10.0 は `ItemGroup` を足す。
+
+   ```xml
+   <!-- WSServer_sample.csproj（net48・net10.0 とも同じ行） -->
+   <Compile Include="..\..\Shared\Business\**\*.cs" Link="Business\%(RecursiveDir)%(Filename)%(Extension)" />
+   <Compile Include="..\..\Shared\Dao\**\*.cs" Link="Dao\%(RecursiveDir)%(Filename)%(Extension)" />
+   <Compile Include="..\..\Shared\Common\**\*.cs" Link="Common\%(RecursiveDir)%(Filename)%(Extension)" />
+   <!-- WSIFType_sample.csproj -->
+   <Compile Include="..\..\Shared\IfType\**\*.cs" Link="IfType\%(RecursiveDir)%(Filename)%(Extension)" />
+   ```
+
+4. **HintPath をベンダ先へ**：net48 は元 `..\..\..\Frameworks\Infrastructure\Build\` → `..\..\OpenTouryoAssemblies\Build_net48\`、
+   net10.0 は元 `..\..\..\..\Frameworks\Infrastructure\Build_netcore100\` → `..\..\OpenTouryoAssemblies\Build_netcore100\`。
+   `WSServer_sample` → `WSIFType_sample` の ProjectReference は、どちらも元のまま（同じランタイムどうし）。
+5. **Web から ProjectReference する**：net48 の Web（MVC・Web Forms）は `WS_sample` の 2 つ、net10.0 の Web（MVC core）は `WS_sample_Core` の 2 つ
+   （ランタイムをまたいで参照しない）。MVC net48 は未使用の WS 参照（DLL）を消さずに ProjectReference に替え、sln にも足す（`mvc.md`）。
+   net10.0 は `dotnet add <Web>.csproj reference …` と `dotnet sln add`。
+
+確かめた（2026-11-12。scratchpad）：両方のランタイムでビルドでき（net48 は msbuild、net10.0 は dotnet build。警告 0・エラー 0）、
+**`Shared\Business` と `Shared\IfType` に足したクラスが、csproj を書き換えずに両方の DLL に入り**、MVC core が参照して呼ぶコードもビルドできた。
+**ファイルは `Shared\` のフォルダに置くだけ**にする（Visual Studio のソリューション エクスプローラーから古い形式の csproj に足すと、
+ワイルドカードが個別の行に展開されることがある。未確認）。B層を書くときの置き場所の決まりは `opentouryo-layer-b`。
+
 ## ランタイム注意：core のリモート WS は実用不可
 
 .NET Core では **`BinaryFormatter` が廃止**され、リモート WS 呼び出し（`protocol="2"`〜`"5"`）は実質動かない

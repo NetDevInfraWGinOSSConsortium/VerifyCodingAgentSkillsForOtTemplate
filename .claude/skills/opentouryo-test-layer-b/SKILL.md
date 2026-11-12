@@ -25,6 +25,7 @@ B層の書き方そのものは `opentouryo-layer-b`、呼び出し方は `opent
 | プロジェクト | **`<Webプロジェクト名>.Tests`**。Web のプロジェクトのフォルダと**同じ階層**に置く（`MVC_Sample\` の隣に `MVC_Sample.Tests\`） |
 | 形式 | **SDK 形式の csproj**。`TargetFramework` は **Web のプロジェクトと同じ**（net48 なら `net48`、net10.0 なら `net10.0`） |
 | 参照 | Web のプロジェクトへの `ProjectReference` ＋ **`OpenTouryo.Business`・`OpenTouryo.Framework`・`OpenTouryo.Public` の `Reference`**（HintPath は Web のプロジェクトと同じフォルダ） |
+| B層を WS_sample で共用する構成 | Web が `WSServer_sample` を参照していれば、テストも `WSServer_sample`・`WSIFType_sample`（net10.0 は `WS_sample_Core` の 2 つ）を `ProjectReference` する。設定は Web のものを使うので、テストのプロジェクトは `<Web>.Tests` のまま。**同じ B層のテストは、ランタイムごとに 1 つの `<Web>.Tests` に書く**（P層ごとに重ねない） |
 | テストの単位 | **B層のクラスごとに 1 つのテスト クラス**（`<LayerBのクラス名>Tests`）。テスト メソッドは `<MethodName>_<何を確かめるか>` |
 | 呼び方 | **`new <LayerB>().DoBusinessLogic(引数クラス, 分離レベル)`**（同期版）。`UOC_` は直接呼べない（`FrameworkException`） |
 | 根拠 | **`[Basis("<仕様の ID>")]`** をテスト メソッドに付ける（`EV-ORD-101`・`VAL-ORD-03` など。複数可）。属性はテストのプロジェクトに定義する |

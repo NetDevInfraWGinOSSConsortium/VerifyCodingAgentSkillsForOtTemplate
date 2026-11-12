@@ -10,6 +10,7 @@
 ＝**陳腐化した未使用参照**（`About`/`Contact.cshtml` の残骸と同類）。
 
 - → **WS 参照を (A) ProjectReference 化・`.sln` に追加してはいけない**（不要な参照・sln 肥大が残る＝**目視で検出された不具合**）。
+  **例外：①′ で「B層を WS_sample に置いて共用する」を選んだとき**は、消さずに ProjectReference にする（`webservices.md` の (C)。これから B層を置くので「未使用」ではない）。
 - **取り出し時に `.cs`/`.cshtml` を grep して WS 型の実使用を確認**し、無ければ **WS 参照（DLL 参照）を csproj から削除**する
   （使っていないので削除しても `CS0246` は出ない）。
 - **WebForms との違い**：WebForms は `sampleScreen_cc.aspx.cs` が WS 型（`TestParameterValue`/`TestReturnValue`）を**実際に使う**ので (A)/(B) の判断が要る。
@@ -23,7 +24,7 @@
 
 ## MVC core（`Samples4NetCore\Backend\MVC_Sample`）＝WS 依存なし・SDK 形式
 
-- **WS 依存なし**（3層でない）。SDK 形式で 3rd-party は `PackageReference`（`log4net` / `Microsoft.Data.SqlClient` /
+- **WS 依存なし**（3層でない。①′ で共用を選んだら `WS_sample_Core` を参照する＝`webservices.md` の (C)）。SDK 形式で 3rd-party は `PackageReference`（`log4net` / `Microsoft.Data.SqlClient` /
   `Newtonsoft.Json`）＝触らない。`OpenTouryo.*` の HintPath だけベンダ先 `Build_netcore100\<TFM>\` へ（MVC core は `net10.0\`）。
 - config は `appsettings.json`（**キー集合・綴り・スラッシュ区切り・JSONC が net48 と割れる**＝`opentouryo-project-setup-config` /
   `references/resource-config.md`。core の ⑥ は見落とされやすい）。

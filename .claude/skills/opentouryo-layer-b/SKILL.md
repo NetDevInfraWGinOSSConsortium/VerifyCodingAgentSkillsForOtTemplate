@@ -40,6 +40,11 @@ UOC のシグネチャ・自動振り分け・`this.ReturnValue`・直呼びガ�
 
 `MyBaseLogic` は非推奨。`MyFcBaseLogic` を継承する。
 
+**置く場所は csproj で決める**：Web の csproj が `WSServer_sample` を ProjectReference していれば（B層を WS_sample で共用する構成。
+`opentouryo-project-setup-core` の `samples/webservices.md` (C)）、業務コードクラスはリポジトリ直下の `Shared\Business`、D層は `Shared\Dao`、
+引数・戻り値のクラスは `Shared\IfType` に置く（名前空間は `WSServer_sample.Business`・`WSIFType_sample` など、移す前のもの）。**ファイルを置くだけ**でよい
+（csproj はフォルダごとのリンクなので書き換えない。net48 と net10.0 の両方に入る・実測）。P層からは直接呼ぶ。参照していなければ Web のプロジェクトに置く。
+
 ## 業務コードクラスの書き方
 
 `MyFcBaseLogic` を継承する。クラス名はサンプルでは `LayerB` が多いが、機能名を付けたクラス

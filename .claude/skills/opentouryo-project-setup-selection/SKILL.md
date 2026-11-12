@@ -19,7 +19,7 @@ metadata:
 
 | 作りたいもの | サンプル（系列\起点） | ランタイム | WS/3層依存 |
 | --- | --- | --- | --- |
-| ASP.NET MVC | `WebApp_sample\MVC_Sample`（core は `Backend\MVC_Sample`） | net48 / net10.0 | **net48:あり** / core:なし |
+| ASP.NET MVC | `WebApp_sample\MVC_Sample`（core は `Backend\MVC_Sample`） | net48 / net10.0 | net48:参照だけ（未使用） / core:なし |
 | Web Forms | `WebApp_sample\WebForms_Sample` | **net48 のみ** | **あり（transform 前提）** |
 | Windows Forms（2層C/S） | `2CS_sample\2CSClientWin_sample` | net48 / net10.0 | なし |
 | WPF（2層C/S） | `2CS_sample\2CSClientWPF_sample` | net48 / net10.0 | なし |
@@ -64,7 +64,8 @@ config は `SqlTextFilePath` の1点張替で足りることが多い（④⑤�
 
 **「WS/3層依存あり」の内訳**（取り出し直後 `CS0246` が残る。依存元ソースは `Samples\WS_sample` に実在）：
 - **`WebForms_Sample`**（net48）— WS を利用（core 化の (B) 切り離しも可）。
-- **`MVC_Sample` の net48**（`Crud1Controller` が `TestParameterValue` 等の WS 型を使用。**core の MVC はなし**）。
+- **`MVC_Sample` の net48 は参照だけ**（csproj に WS 参照があるが、コードは WS 型を使っていない。`Crud1Controller` の `TestParameterValue` は
+  MVC 自身の `Logic\Common\TestParameterValue.cs`。実測）。セットアップは参照を消す（下の「B層の置き場所」で共用を選んだときを除く）。**core の MVC はなし**。
 - **`WS_sample\WSClient_sample` の Win/WPF/WinCone**（core は `Samples4NetCore\Legacy\...`）— 3層リッチクライアント＝構成上 WS 必須。
   **※ core 版は `BinaryFormatter` 廃止で実質インプロセスのみ＝実用は net48 側**（`opentouryo-transmission`）。
   **※ WSClient の各 variant は依存構造が異なる**（`Win2` は WS 非依存の単独 P層）。**名前で決めず、取り出し時に csproj の
@@ -75,6 +76,18 @@ config は `SqlTextFilePath` の1点張替で足りることが多い（④⑤�
 
 **WPF は P層フレームワークを持たない**（`opentouryo-layer-p-winforms-screen`）。
 `2CS_sample\2CSClientWPF_sample` を参考に、画面は素の WPF として実装する。
+
+## ①′ B層の置き場所を選ぶ（Web 系：MVC・MVC core・Web Forms）
+
+Web 系を選んだら、**B層・D層・引数と戻り値のクラスをどこに置くか**をユーザに聞く（2 つとも示す。勝手に決めない）。
+
+| 選択 | 置き場所 | 向いている場合 |
+| --- | --- | --- |
+| 1. Web のプロジェクトに置く | 各 Web のプロジェクトの中 | P層が 1 つだけ。これまでの構成 |
+| 2. WS_sample に置いて共用する | ソースはリポジトリ直下の `Shared\`（B・D層・型）。net48 の `WS_sample` と net10.0 の `WS_sample_Core` の `WSServer_sample`・`WSIFType_sample` がリンクで使う | 同じ B層を、複数の P層（MVC・MVC core・Web Forms）から使う |
+
+2 を選んだら、④⑤ `opentouryo-project-setup-core` の `samples/webservices.md`「(C) B層を WS_sample に置いて共用する」で取り出す。
+既存 repo に Web 系を足すときは、既に `WS_sample\WSServer_sample` を ProjectReference している Web があるかを見て、あれば 2 を勧める。
 
 ## ② 取得元をユーザに選ばせる
 
