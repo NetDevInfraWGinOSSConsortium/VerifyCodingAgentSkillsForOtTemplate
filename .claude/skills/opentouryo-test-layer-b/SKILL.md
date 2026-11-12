@@ -25,7 +25,7 @@ B層の書き方そのものは `opentouryo-layer-b`、呼び出し方は `opent
 | プロジェクト | **`<Webプロジェクト名>.Tests`**。Web のプロジェクトのフォルダと**同じ階層**に置く（`MVC_Sample\` の隣に `MVC_Sample.Tests\`） |
 | 形式 | **SDK 形式の csproj**。`TargetFramework` は **Web のプロジェクトと同じ**（net48 なら `net48`、net10.0 なら `net10.0`） |
 | 参照 | Web のプロジェクトへの `ProjectReference` ＋ **`OpenTouryo.Business`・`OpenTouryo.Framework`・`OpenTouryo.Public` の `Reference`**（HintPath は Web のプロジェクトと同じフォルダ） |
-| B層を WS_sample で共用する構成 | Web が `WSServer_sample` を参照していれば、テストも `WSServer_sample`・`WSIFType_sample`（net10.0 は `WS_sample_Core` の 2 つ）を `ProjectReference` する。設定は Web のものを使うので、テストのプロジェクトは `<Web>.Tests` のまま。**同じ B層のテストは、ランタイムごとに 1 つの `<Web>.Tests` に書く**（P層ごとに重ねない） |
+| B層を WS_sample で共用する構成 | Web が `WSServer_sample` を参照していれば、テストも `WSServer_sample`・`WSIFType_sample`（net10.0 は `WS_sample_Core` の 2 つ）を `ProjectReference` する。設定は Web のものを使うので、テストのプロジェクトは `<Web>.Tests` のまま。**B層のテストのコードは `Shared\WSServer_sample.Tests\` に 1 つだけ書く**（下の「B層を共用する構成のテスト」） |
 | テストの単位 | **B層のクラスごとに 1 つのテスト クラス**（`<LayerBのクラス名>Tests`）。テスト メソッドは `<MethodName>_<何を確かめるか>` |
 | 呼び方 | **`new <LayerB>().DoBusinessLogic(引数クラス, 分離レベル)`**（同期版）。`UOC_` は直接呼べない（`FrameworkException`） |
 | 根拠 | **`[Basis("<仕様の ID>")]`** をテスト メソッドに付ける（`EV-ORD-101`・`VAL-ORD-03` など。複数可）。属性はテストのプロジェクトに定義する |
@@ -33,6 +33,23 @@ B層の書き方そのものは `opentouryo-layer-b`、呼び出し方は `opent
 
 **Web の参照（HintPath）はテストのコンパイルに引き継がれない**（実測。`CS0246: 'Touryo' が見つからない`）。だから 3 つの `Reference` を書く。
 テストのコードが他の OpenTouryo の型（`DamSqlSvr` など）を `using` するときは、その DLL も足す。実行時の DLL は Web の出力から写る。
+
+## B層を共用する構成のテスト（`Shared\` があるとき）
+
+B層のソースと同じく、**テストのコード（`<LayerB>Tests.cs` と `QualityAttributes.cs`。名前空間 `WSServer_sample.Tests`）は `Shared\WSServer_sample.Tests\` に置き**、
+**ランタイムごとに 1 つの `<Web>.Tests`**（net48 は先に作った方、例 `MVC_Sample.Tests`。net10.0 は `MVC_Sample_Core\MVC_Sample.Tests`）がリンクで取り込む。
+同じテストが両方のランタイムで走る（実測：net48・net10.0 とも成功）。P層ごとに重ねない（同じランタイムの 2 つ目の Web の `<Web>.Tests` はリンクしない）。
+
+```xml
+<ItemGroup>
+  <Compile Include="..\..\Shared\WSServer_sample.Tests\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
+</ItemGroup>
+```
+
+- 設定（net48 の `App.config`・net10.0 の `TestSetup.cs`）は、各 `<Web>.Tests` に置く（ランタイムで違う）。リンクするのは B層のテストだけ。
+- テストのコードは **net48（C# 7.3）でも組める書き方**にする（下の「テストを書く」は両方で通る形）。
+- フォルダ名を `.Tests` で終える（期待値の変更の検出器のパス・段 4 の「テストのファイルを編集しない」に当たるように）。
+- B層を変えたら、**両方のランタイムの `<Web>.Tests` を流す**。
 
 ## プロジェクトを作る
 

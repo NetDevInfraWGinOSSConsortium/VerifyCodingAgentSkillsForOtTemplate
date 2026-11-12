@@ -18,7 +18,7 @@ ProgramID は **`OrdTf`**（テスト先行。トランザクション2 の `Ord
 | 業務コードクラス | `OrdTfBusiness`（`MyFcBaseLogic` を継承。D層は CmnDao） |
 | B層のルート メソッド | `MethodName` = `OrdTfInit`（選択肢）・`OrdTfSearch`（検索。ページは `PageNo`） |
 | 引数クラス・戻り値クラス | `OrdTfParameterValue`・`OrdTfReturnValue` |
-| テストのプロジェクト・クラス | `<Webプロジェクト名>.Tests`・`OrdTfBusinessTests`、`<Webプロジェクト名>.E2ETests`・`OrdTfScreenTests` |
+| テストのプロジェクト・クラス | `<Webプロジェクト名>.Tests`・`OrdTfBusinessTests`、`<Webプロジェクト名>.E2ETests`・`OrdTfScreenTests`（B層を共用する構成では、`OrdTfBusinessTests` は `Shared\WSServer_sample.Tests\`） |
 | テスト仕様 | `docs/spec/test3-testfirst-OrdTf-<フレームワーク>-tests.md`（例 `…-OrdTf-mvc-core-tests.md`） |
 | 計画 | `docs/plan/test3-testfirst-OrdTf-<フレームワーク>.md` |
 | 決定のレポート | `docs/spec/test3-testfirst-OrdTf-<フレームワーク>-decisions.md`（司令役が書き、人の判断を対話で聞いて書き込む） |

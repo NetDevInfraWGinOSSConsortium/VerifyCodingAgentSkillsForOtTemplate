@@ -11,6 +11,12 @@ MVC_Sample_Core に opentouryo-* スキルを使用して実装する。
 ## ケース3：WebForms_Sample
 WebForms_Sample に opentouryo-* スキルを使用して実装する。
 
+## B層を共用する構成（リポジトリ直下に `Shared\` がある）
+P層が違っても B層・D層は 1 つ（`Shared\`）。**B層とそのテスト（`Shared\WSServer_sample.Tests\`）は、最初に回すケースで作る。**
+**2 つ目以降のケースは B層を作らず、P層と画面の E2E だけをテスト先行で作る**（テスト仕様には、B層は作成済みと書き、そのテストの場所を示す）。
+- ランタイムが変わる最初のケース（例 ケース 2 の net10.0）では、そのランタイムの `<Web>.Tests` を作り、`Shared\WSServer_sample.Tests\` をリンクして、B層のテストを流す（`opentouryo-test-layer-b`）。
+- P層を作る途中で B層に足りないものが見つかったら、B層のテストから足す（`Shared\WSServer_sample.Tests\`。テスト仕様に足し、レビューを通す）。足したら、全部のランタイムで B層のテストを流す。
+
 ## 役と渡すもの
 | 役 | 何者 | 渡すもの |
 | --- | --- | --- |
