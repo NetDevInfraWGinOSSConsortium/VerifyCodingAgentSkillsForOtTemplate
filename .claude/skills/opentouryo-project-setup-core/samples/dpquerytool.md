@@ -16,7 +16,7 @@ SQL 定義の書き方（タグ・`@` パラメタ・ユーザパラメタ・`PA
 - WinExe（WinForms の GUI）。`AssemblyName` は `OpenTouryo.DPQuery_Tool`。
 - net48：`DPQuery_Tool.csproj` / `.sln`（msbuild）。
 - net10.0：`DPQuery_ToolCore.csproj` / `.sln`（`net10.0-windows7.0`＝Windows 専用。`dotnet build`）。
-- リポの標的ランタイムの方だけ取り出す（両方を持つリポなら両方。`daogentool.md` と同じ）。
+- リポの標的ランタイムの方だけ取り出す（両方を持つリポなら両方。`daogentool.md` と同じ。`obj\` を共有するのでビルドの前に毎回 restore する）。
 
 ## 取り出しと参照張り替え（⑤ と同じ要領）
 

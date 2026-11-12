@@ -24,7 +24,13 @@ metadata:
    （絶対 `C:\root\files\resource\...` から。**相対パスは不可**。既設と衝突するなら番号付き `%OT_RESOURCE_ROOTn%`＝例 `%OT_RESOURCE_ROOT1%`）。
 3. **ログ定義ファイル `resource\Log\*.xml`（`SampleLogConf.xml` 等）の出力先パスも同様に張り替える**——ただし
    **張り替えなくても起動する**（`<param name="File" value="C:\root\files\resource\Log\...">` が残ってもログが旧パスへ出るだけ＝一部設定は空/誤りでも起動）。
-   ここは `%OT_RESOURCE_ROOT%` が効かず log4net の `%env{}`（`<file type="log4net.Util.PatternString" value="%env{OT_RESOURCE_ROOT}\Log\...">`）を使う。詳細は下記。
+   ここは `%OT_RESOURCE_ROOT%` が効かず log4net の `%env{}`（`<file type="log4net.Util.PatternString" value="%env{OT_RESOURCE_ROOT}\Log\...">`）を使う。
+   NLog（`SampleLogConf_N.xml`・`NLogConfigTemplate.xml`）も張り替える：`fileName` は `${environment:OT_RESOURCE_ROOT}`、`internalLogFile` は `%OT_RESOURCE_ROOT%`（実測）。
+   サンプルが使わない定義（例・雛形）も含め、`resource\Log\*.xml` の `C:\root` は全部張り替える。詳細は `references/resource-config.md`。
+4. **張り替えた変数を、ユーザー環境変数に登録する**（値は `<repo>\resource`。既設なら番号付き）。登録しないと、人が Visual Studio や IIS Express から
+   起動したときに resource が見つからず実行エラーになる（実測）。`SETUP-CHANGES.md` に記録し、巻き戻しのコマンドも書く
+   （消すときは `[Environment]::SetEnvironmentVariable('<名前>', [NullString]::Value, 'User')`。`$null` を渡すと空の値が残る・実測）。
+   登録できなければ（権限・自動判定で拒まれた）人に頼む。登録したら「起動し直したターミナル・VS から効く」と伝える。
 
 **機構の詳細は `references/resource-config.md`**（相対不可＝`ResourceLoader` フルパス前提・`%VAR%` 展開が
 `FxContainerization` と別機構・パス系キー一覧・綴りの罠 `Xml`/`Test`・net48 Web の config 二段）。Fx キーは `opentouryo-config`。

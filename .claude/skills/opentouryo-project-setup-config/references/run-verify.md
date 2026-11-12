@@ -4,7 +4,18 @@
 ビルド成功＝動く、ではない。フレームワーク初期化は `%OT_RESOURCE_ROOT%` から XML 定義・log4net を読むので、
 **実行して初めて resource/config 張り替え（⑥）の成否が分かる**。
 
-## 手順
+## サンプル別：起動のフォルダとスモークの URL
+
+| サンプル | 起動 | 起動するフォルダ（`Web.config` などのある内側） | 未認証で開く URL | DB 到達を見る画面 |
+| --- | --- | --- | --- | --- |
+| Web Forms（net48） | IIS Express | `WebForms_Sample\WebForms_Sample` | `Index.html`・`Aspx/start/login.aspx`＝200 | `Aspx/sample/crud/sampleScreen.aspx`・`sampleScreen_cc.aspx` |
+| MVC（net48） | IIS Express | `MVC_Sample\MVC_Sample` | `/Home/Login`＝200（`/`・`/Home/Index`・`/Ping/Index` は 302） | `/Crud1/…`・`/Crud2/…` |
+| MVC（core） | Kestrel（`dotnet run`） | `MVC_Sample_Core\MVC_Sample` | `/`・`/Home/Index`・`/Home/Login`・`/Ping/Index`＝200 | `/Crud1/…`・`/Crud2/…` |
+
+**起動が拒まれたら（権限・自動判定）、人に頼む**：起動するフォルダ・ポート・URL・`OT_RESOURCE_ROOT` の値を示し、結果を聞く（実測で拒まれた）。
+ログインと DB 到達の非対話の手順は、下の Web Forms・core の節。
+
+## 手順（IIS Express）
 
 1. **プレーン HTTP ポートで起動して SSL 証明書バインドを回避する。** サンプルの既定は
    `IISUrl=https://localhost:44371/`（SSL）で、証明書が無いと詰まる。`http` ポートを指定して起動する：

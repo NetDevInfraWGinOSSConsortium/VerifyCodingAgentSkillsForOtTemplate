@@ -13,7 +13,8 @@
    （例：ログ出力先が旧パスのままでも起動する＝下記）。
 
 `OT_RESOURCE_ROOT`（またはその番号付き）＝リポジトリ直下の `resource\`。**ユーザ環境変数はマシン/ユーザ全体に残る＝`SETUP-CHANGES.md` に記録。**
-**検証だけなら User 変数を変えず、プロセス限定上書き**（`$env:OT_RESOURCE_ROOT="<repo>\resource"` を起動コマンドで＝`run-verify.md`）で足り、記録も不要。
+**セットアップの終わりには User 変数に登録する**（SKILL ⑥ の 4。人が VS・IIS Express から起動するため）。
+登録の前に一時的に起動して確かめるだけなら、プロセス限定上書き（`$env:OT_RESOURCE_ROOT="<repo>\resource"` を起動コマンドで＝`run-verify.md`）で足りる。
 
 ## パス系キー（張り替える対象）
 
@@ -83,8 +84,10 @@ IIS Express / w3wp の CWD はアプリ フォルダでないため 500 にな�
   <nlog ... internalLogFile="%OT_RESOURCE_ROOT%\Log\NLogInternalLog.log">
     <target xsi:type="File" name="ACCESS" fileName="${environment:OT_RESOURCE_ROOT}\Log\ACCESS..." ... />
   ```
-  実物のテンプレート `NLogConfigTemplate.xml` は `internalLogFile` が絶対パス `C:\root\...`、`fileName` が `（★ファイルパス）`（環境変数は使っていない）。
-  **未実測**（NLog を使うサンプルで実行して確かめていない）＝NLog を使うなら、張り替えた後にログが `resource\Log` に出ることを確かめる。
+  実物のテンプレート `NLogConfigTemplate.xml` は `internalLogFile` が絶対パス `C:\root\...`、`fileName` が `（★ファイルパス）`（`fileName` はそのまま残す）。
+  **実測（2026-11-13）**：`SampleLogConf_N.xml` を上の 2 つの書式に張り替え、NLog 5.5.0（OpenTouryo の版）を `XmlLoggingConfiguration` で読んで
+  `ACCESS`・`SQLTRACE`・`OPERATION` に書くと、3 つのログと `NLogInternalLog.log` が `%OT_RESOURCE_ROOT%\Log` に出た（net10.0 のコンソールで。net48 は未実測）。
+- `resource\Sql\ole_odbc\Configuration steps ODBC.txt` の `C:\root` は説明文なので触らない。
 
 ## ★ キー集合・綴り・区切りはサンプル/ランタイムで割れる（決め打ち禁止）
 

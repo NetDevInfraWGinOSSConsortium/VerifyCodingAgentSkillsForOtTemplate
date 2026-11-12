@@ -11,10 +11,29 @@
 
 - → **WS 参照を (A) ProjectReference 化・`.sln` に追加してはいけない**（不要な参照・sln 肥大が残る＝**目視で検出された不具合**）。
   **例外：①′ で「B層を WS_sample に置いて共用する」を選んだとき**は、消さずに ProjectReference にする（`webservices.md` の (C)。これから B層を置くので「未使用」ではない）。
+- **消す前に、①′（B層の置き場所）が決まっているかを確かめる。決まっていなければ聞く**（`opentouryo-project-setup-selection`）。
 - **取り出し時に `.cs`/`.cshtml` を grep して WS 型の実使用を確認**し、無ければ **WS 参照（DLL 参照）を csproj から削除**する
   （使っていないので削除しても `CS0246` は出ない）。
 - **WebForms との違い**：WebForms は `sampleScreen_cc.aspx.cs` が WS 型（`TestParameterValue`/`TestReturnValue`）を**実際に使う**ので (A)/(B) の判断が要る。
   MVC は使っていないので判断の余地なく**削除**＝**(A)/(B) は「参照があるか」でなく「実使用があるか」で決める**（共通手順は `webservices.md`）。
+
+## (C) を選んだとき：MVC 自身の B層を Shared に張り替える（net48・core とも。実測）
+
+`MVC_Sample`（net48・core とも）は自分の `Logic\`（`LayerB`・`LayerD`・`DaoShippers`・引数と戻り値のクラス）を持ち、`Crud1`・`Crud2` はそれを呼ぶ。
+(C) では **`Logic\` を消し（csproj の `<Compile Include>` も）、コントローラを `WSServer_sample.Business.LayerB`・`WSIFType_sample` の型に張り替える**
+（残すと、画面は MVC 自身の B層を使ったままで、Shared の B層は使われない）。Shared の B層は MVC 版と**引数・戻り値の形が違う**ので、P層に変換を足す
+（例 `Models\ShipperMapper.cs`）：
+
+| | MVC 自身の B層 | Shared の B層 | P層での変換 |
+| --- | --- | --- | --- |
+| 引数 | ViewModel（`Shipper`） | `ShipperID`（`int`）・`CompanyName`・`Phone` | ViewModel から設定（`ShipperID` は `long?` → `int`） |
+| 一覧の戻り値 | `List<ShipperViweModel>` | `Obj` に `DataTable`／`DataSet` | `DataToPoco.DataTableToList<T>`。DataReader 版は列名が `c1`〜`c3` なので位置で変換 |
+| 1 件の戻り値 | `Obj`＝ViewModel、`Obj2` | `ShipperID`・`CompanyName`・`Phone` | 戻り値から ViewModel を作る。`Obj2` を使うテストのコード（PocoToPoco）は消す |
+
+確かめた：msbuild 警告 0・エラー 0、`aspnet_compiler` 成功、作者が起動して画面が Shared の B層で動いた（VerifyCaTddForOT、2026-11-12）。
+MVC core（`Backend\MVC_Sample`）も同じ手順で通った：自身の `Logic\` の形が net48 と同じなので、`ShipperMapper.cs` は net48 のものをそのまま使える
+（`dotnet build` 警告 0・エラー 0、`/Home/Login`・`/Home/Index` が 200。2026-11-12）。core の DB 到達（Crud 画面）は確かめていない。
+Web Forms は変換が要らない（`webforms.md`）。
 
 ## MySql/Oracle の HintPath は「Frameworks 側」＝WebForms と割れる
 

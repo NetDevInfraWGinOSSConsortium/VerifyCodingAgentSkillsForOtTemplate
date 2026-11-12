@@ -16,6 +16,11 @@
 **リポの標的ランタイムの csproj・sln だけを取り出す**（もう一方は取り出さない）。net48 と net10.0 の両方を持つリポなら両方。
 net10.0 だけのリポには `Build_net48` がベンダされないので、net48 版は置いてもビルドできない（実測）。`DPQuery_Tool` も同じ扱い。
 
+**★ 両方を持つリポでは、2 つの csproj が同じフォルダにあり `obj\project.assets.json` を共有する**（上流の配置のまま）。最後に restore した方のランタイムしか
+入っていないので、**もう一方を restore せずにビルドすると失敗する**（実測：net48 は `Your project does not reference ".NETFramework,Version=v4.8"`、
+core は `NETSDK1005`）。**ビルドは毎回 restore から**：net48 は `msbuild <sln> /t:restore,build`、core は `dotnet build`（`--no-restore` を付けない）。
+この順なら交互に建てても通る（実測）。`DaoGen_Tool.csproj` は `..\DPQuery_Tool\DummyDaps.cs` をリンクするので、`DPQuery_Tool` も取り出す。
+
 ## 取り出しと参照張り替え（⑤ と同じ要領）
 
 1. `DaoGen_Tool` フォルダを **`OT_Tools\DaoGen_Tool\`** に置く（`DaoGen_Tool`/`DPQuery_Tool` は **`OT_Tools\` 配下に

@@ -116,6 +116,10 @@ net48 と net10.0 の `WSServer_sample`・`WSIFType_sample` が**リンクで**�
 5. **Web から ProjectReference する**：net48 の Web（MVC・Web Forms）は `WS_sample` の 2 つ、net10.0 の Web（MVC core）は `WS_sample_Core` の 2 つ
    （ランタイムをまたいで参照しない）。MVC net48 は未使用の WS 参照（DLL）を消さずに ProjectReference に替え、sln にも足す（`mvc.md`）。
    net10.0 は `dotnet add <Web>.csproj reference …` と `dotnet sln add`。
+6. **サンプル自身の B層を Shared に張り替える**：サンプルの画面が自分の B層（MVC の `Logic\` など）を呼んだままだと、Shared の B層は使われない。
+   自身の B層を消し、画面を Shared の B層に張り替える。**Shared が受け持つのは CRUD 画面（Shippers）の B層・D層だけ**なので、
+   Shared に無いもの（マスタ取得・ほかのテーブルの Dao など）とそれが使う型は残す。サンプルごとの違いは `samples/<サンプル>.md`（実測）：
+   MVC（net48・core）は引数・戻り値の形が違うので P層で変換する（`mvc.md`）。Web Forms は名前空間だけの違いで、`using` を替えるだけ（`webforms.md`）。
 
 確かめた（2026-11-12。scratchpad）：両方のランタイムでビルドでき（net48 は msbuild、net10.0 は dotnet build。警告 0・エラー 0）、
 **`Shared\Business` と `Shared\IfType` に足したクラスが、csproj を書き換えずに両方の DLL に入り**、MVC core が参照して呼ぶコードもビルドできた。

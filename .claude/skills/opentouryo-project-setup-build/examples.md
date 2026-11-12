@@ -41,7 +41,8 @@ SKILL 本文どおり、日本語コメントを含む `.ps1` を WinPS 5.1 で�
 
 下の2本（`setup-build.ps1`＝net48／`setup-build-netcore.ps1`＝netcore100）は**大半が重複**する。混在 repo
 （net48 済みに netcore100 を後から足す等）で毎回どちらを複製/改変するか迷わないよう、**`-Runtime net48|netcore100` の
-1本に畳む**のが推奨（実測でそう直した）。バッチ名・ベンダ先が規則的なので引数1本で導出できる：
+1本に畳む**（実測でそう直した）。**net48 の `setup-build.ps1` があるリポに net10.0 を足すときは、別のファイル（`setup-build-netcore.ps1` など）を足さず、
+その 1 本に `-Runtime` を足す**（実測：別ファイルにされた）。バッチ名・ベンダ先が規則的なので引数1本で導出できる：
 
 ```powershell
 param([ValidateSet('net48','netcore100')][string]$Runtime = 'net48')
@@ -57,9 +58,9 @@ $vendor = Join-Path $repo "OpenTouryoAssemblies\Build_$Runtime"
 - `setup-build.ps1` — 本スキル ①②③（ZIP取得 → net48 基盤ビルド → ベンダ）。短パス `C:\otr` でビルド、
   `OpenTouryo.Business.dll` の実在で成否判定。**親クラス2 をカスタマイズするなら任意ブロック**（overlay 適用＋
   2CS の `Business.RichClient` ビルド）を有効化する。
-- `build-app.ps1` — アプリ側の取り出し後ビルド（`opentouryo-project-setup` ④⑤ / `samples/webforms.md` 構成A）。
-  `nuget restore` → WebForms ソリューションを一括ビルド（`WSServer_sample`/`WSIFType_sample` は ProjectReference＝
-  同ソリューションで同時に建つ）。vswhere で msbuild 解決。
+- `build-app.ps1` — アプリ側の取り出し後ビルド（`opentouryo-project-setup` ④⑤）。**取り出した Web の sln を全部、この 1 本で建てる**
+  （サンプルごとに別のスクリプトを足さない。リストにある sln のうち、あるものだけを建てる）。net48 は `nuget restore` → msbuild、core は `dotnet build`
+  （`WSServer_sample`/`WSIFType_sample` は ProjectReference＝同ソリューションで同時に建つ）。vswhere で msbuild 解決。
   **開発支援ツールを取り出しているなら任意ブロック**（DaoGen/DPQuery のビルド）で欠落参照を早期に炙り出す。
 
 ## `setup-build.ps1`（ZIP取得 → net48 基盤ビルド → ベンダ）
@@ -274,7 +275,7 @@ $zipHash = $(if (Test-Path $zip) { (Get-FileHash $zip -Algorithm SHA256).Hash.Su
 > （実測：develop の Core MVC は `3.3.0`）。いずれにせよ**セットアップ側で無理に差し替えない**（本体の版に従う。
 > 出ても無害・出なくても正常＝どちらでも「おかしい」と迷わない）。
 
-## `build-app.ps1`（restore → WebForms ソリューションを一括ビルド → ツール）
+## `build-app.ps1`（restore → 取り出した Web の sln を建てる → ツール）
 
 **参照方式（更新）**：`WSServer_sample`/`WSIFType_sample` は **ProjectReference**（サンプル自身の B・D層/型＝P・B・D 並行開発。
 `samples/webservices.md`）。よって**WS を別ビルドして `WS_sample\Build\` へ DLL コピーする旧手順は不要**＝WebForms
@@ -289,14 +290,14 @@ DLL 参照のままベンダ先 `Build_net48\` を指す（`references/reference
 | **`packages.config` 無 ＋ `PackageReference`（非SDK net48・2CS 等）** | `msbuild <sln> /t:restore,build`（`nuget restore` では復元されず `Microsoft.Data.SqlClient` 等が解決不能） |
 | SDK（core） | `dotnet build`（restore 込み） |
 
-下の雛形は WebForms（`packages.config`）前提。**2CS 等 `PackageReference` のみの sln を足すときは `msbuild /t:restore,build` に切り替える**
+下の雛形の net48 の Web（WebForms・MVC）は `packages.config` 前提。**2CS 等 `PackageReference` のみの sln を足すときは `msbuild /t:restore,build` に切り替える**
 （DaoGen/DPQuery ツールが既にその方式＝下の任意ブロック）。
 
 ```powershell
-# Build the WebForms sample (3-layer, WS in-process) against the vendored
+# Build the Web samples taken out (only the .sln that exist) against the vendored
 # OpenTouryo base DLLs. Reproducible from a fresh clone:
-#   1. nuget restore + build the WebForms solution (WSServer/WSIFType are
-#      ProjectReferences in the .sln -> built in-solution; no copy to Build\)
+#   1. net48: nuget restore + msbuild / net10.0: dotnet build (WSServer/WSIFType
+#      are ProjectReferences in the .sln -> built in-solution; no copy to Build\)
 #   2. (optional) build the dev tools taken out under OT_Tools\
 # Prereq: run setup-build.ps1 once first (populates OpenTouryoAssemblies\).
 # Prereq: the .sln includes WSIFType_sample/WSServer_sample and the WebForms
@@ -312,18 +313,34 @@ $msb = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild `
         -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
 if (-not $msb) { throw "MSBuild not found (install VS Build Tools / Community)" }
 
+# nuget.exe: tools\nuget.exe if the repo has one, else the one in the OpenTouryo ZIP
+# (root\programs\nuget.exe in the extract tree of step 3).
 $nuget = Join-Path $repo 'tools\nuget.exe'
+if (-not (Test-Path $nuget)) {
+    $nuget = Get-ChildItem 'C:\otr\OpenTouryo-*\root\programs\nuget.exe' -EA SilentlyContinue |
+             Select-Object -First 1 -ExpandProperty FullName
+}
+if (-not $nuget) { throw "nuget.exe not found (tools\ or C:\otr\OpenTouryo-<ref>\root\programs\)" }
 
-# --- 1. restore + build the WebForms solution (WS built in-solution via ProjectReference) ---
-$wfSln = Join-Path $repo 'WebForms_Sample\WebForms_Sample.sln'
+# --- 1. restore + build the Web solutions that were taken out ---
+foreach ($rel in 'WebForms_Sample\WebForms_Sample.sln', 'MVC_Sample\MVC_Sample.sln') {   # net48 (packages.config)
+    $wfSln = Join-Path $repo $rel
+    if (-not (Test-Path $wfSln)) { continue }
 # nuget.exe auto-detects an MSBuild and may grab the SSMS-bundled one -> `MSB4226`
 # (Microsoft.WebApplication.targets missing) on Web slns. It's only an error MESSAGE
 # (packages.config still restores, build succeeds) but reads as failure. Pin MSBuild
 # to the vswhere-resolved one.
-& $nuget restore $wfSln -MSBuildPath (Split-Path $msb)   # msbuild /t:restore won't restore packages.config
-if ($LASTEXITCODE -ne 0) { throw "nuget restore failed ($LASTEXITCODE)" }
-& $msb $wfSln /p:Configuration=Debug /nologo /v:m
-if ($LASTEXITCODE -ne 0) { throw "WebForms build failed ($LASTEXITCODE)" }
+    & $nuget restore $wfSln -MSBuildPath (Split-Path $msb)   # msbuild /t:restore won't restore packages.config
+    if ($LASTEXITCODE -ne 0) { throw "nuget restore failed: $rel ($LASTEXITCODE)" }
+    & $msb $wfSln /p:Configuration=Debug /nologo /v:m
+    if ($LASTEXITCODE -ne 0) { throw "build failed: $rel ($LASTEXITCODE)" }
+}
+foreach ($rel in 'MVC_Sample_Core\MVC_Sample.sln') {   # net10.0 (SDK): dotnet build restores
+    $sln = Join-Path $repo $rel
+    if (-not (Test-Path $sln)) { continue }
+    dotnet build $sln -nologo -v q
+    if ($LASTEXITCODE -ne 0) { throw "build failed: $rel ($LASTEXITCODE)" }
+}
 
 # --- 2. (optional) build the dev tools (DaoGen_Tool / DPQuery_Tool) ---
 # Taken out from Frameworks\Tools and grouped under OT_Tools\. Their csproj
@@ -332,11 +349,19 @@ if ($LASTEXITCODE -ne 0) { throw "WebForms build failed ($LASTEXITCODE)" }
 # (Microsoft.Data.SqlClient etc.). PackageReference needs a restore even on net48
 # (no packages.config); skipping it -> CS0234 on `using Microsoft.Data.SqlClient;`.
 # Building them here surfaces that at setup time. (HintPaths already rewritten.)
+# net48 and Core csproj share obj\ in the same folder -> ALWAYS restore before build
+# (the last restore wins; building the other without restore fails. measured).
 foreach ($tool in 'DaoGen_Tool','DPQuery_Tool') {
     $toolSln = Join-Path $repo "OT_Tools\$tool\$tool.sln"
-    if (-not (Test-Path $toolSln)) { continue }
-    & $msb $toolSln /t:restore,build /p:Configuration=Debug /nologo /v:m
-    if ($LASTEXITCODE -ne 0) { throw "$tool build failed ($LASTEXITCODE)" }
+    if (Test-Path $toolSln) {
+        & $msb $toolSln /t:restore,build /p:Configuration=Debug /nologo /v:m
+        if ($LASTEXITCODE -ne 0) { throw "$tool build failed ($LASTEXITCODE)" }
+    }
+    $coreSln = Join-Path $repo "OT_Tools\$tool\${tool}Core.sln"
+    if (Test-Path $coreSln) {
+        dotnet build $coreSln -nologo -v q   # no --no-restore
+        if ($LASTEXITCODE -ne 0) { throw "${tool}Core build failed ($LASTEXITCODE)" }
+    }
 }
 Write-Host "Build OK." -ForegroundColor Green
 ```

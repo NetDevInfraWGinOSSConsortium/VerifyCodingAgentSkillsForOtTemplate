@@ -29,7 +29,8 @@ ZIP の**サブツリーだけを選択展開**するとき、`unzip ".../<sampl
 （墨壺＝D層自動生成）と `DPQuery_Tool`（動的クエリ試験）を取り出し対象に含める（DAO 自動生成・動的 SQL は標準ワークフロー）。
 **取り出し先は `OT_Tools\DaoGen_Tool\` / `OT_Tools\DPQuery_Tool\` に固定**（`OT_Tools\` 配下にまとめる。
 HintPath は2階層＝`..\..\`。`samples/daogentool.md` / `samples/dpquerytool.md`）。
-**net48 版（`*.csproj`）と Core 版（`*Core.csproj`）は、リポの標的ランタイムの方だけ取り出す**（両方を持つリポなら両方）。
+**DaoGen のテンプレート `root\files\tools\DGenTemplates` も `OT_Tools\DGenTemplates\` に取り出す**（`Frameworks\Tools` の外にあるので漏れやすい。実測で漏れた）。
+**net48 版（`*.csproj`）と Core 版（`*Core.csproj`）は、リポの標的ランタイムの方だけ取り出す**（両方を持つリポなら両方。同じフォルダで `obj\` を共有するので、ビルドの前に毎回 restore する）。
 ⑤ と同様に張り替えるが、**両ツールは `HintPath`＋`PackageReference` 混在で net48 でも restore が要る**
 （`Microsoft.Data.SqlClient` 等。漏れは `CS0234`）。詳細は `samples/daogentool.md` / `samples/dpquerytool.md`。
 

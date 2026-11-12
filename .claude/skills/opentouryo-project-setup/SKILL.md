@@ -33,6 +33,8 @@ metadata:
 ```
 
 - **①② `opentouryo-project-setup-selection`** — 起点サンプル（全系列を提示）と `<ref>`（固定タグ/develop）を決める。
+  **Web 系なら ①′（B層の置き場所）も聞く。サンプル・ランタイム・取得元が指示や計画で決まっていても、①′ は聞く**
+  （④⑤ で MVC net48 の WS 参照を消すかが、これで決まる。実測：聞かずに消し、共用に決まって戻した）。
 - **③ `opentouryo-project-setup-build`** — ②の `<ref>` と標的ランタイムで基盤をビルド→ベンダ。1回で再利用可。
 - **④⑤ `opentouryo-project-setup-core`** — サンプル（＋開発支援ツール）を取り出し、参照をベンダ先へ張り替える。核心。
 - **⑥⑦ `opentouryo-project-setup-config`** — resource を移設し config を環境変数方式へ、`.gitignore`、ビルド／実行で検証。
