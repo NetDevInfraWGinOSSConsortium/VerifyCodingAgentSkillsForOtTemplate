@@ -1,7 +1,7 @@
 # 概要
 - Open棟梁向けに開発されたコーディング・エージェントのスキルを実験・検証するためのリポジトリのテンプレート
 - フォークしたり、ZIPでクローンしたりして使用すると良い。使用時は前提部を当該環境で書き換えること。
-- 検証用リポジトリは `New-VerifyRepo.ps1` で作れる（例 `./New-VerifyRepo.ps1 -Name VerifyCaTddForOT3 -Visibility Public -Clone -WhatIf`。`-WhatIf` を外すと作る。作った後に行うことは実行の最後に表示される）。
+- 検証用リポジトリは `New-VerifyRepo.ps1` で作れる（例 `./New-VerifyRepo.ps1 -Clone`。リポジトリ名（既定 `VerifyCa*ForOT`）・公開か非公開か・組織を対話で聞き、最後に GO / NOGO を聞く。`-WhatIf` を付けると何をするかだけを表示する。作った後に行うことは実行の最後に表示される）。
 
 ## 前提
 - CodingAgentは、xxxx（モデルはxxxx）

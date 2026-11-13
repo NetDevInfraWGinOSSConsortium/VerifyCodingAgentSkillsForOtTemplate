@@ -7,14 +7,24 @@
     テンプレートに「Template repository」の印が無いときは、履歴ごと写す（-AllowMirror を付けたときだけ）。
     フォークでも、テンプレートのクローンでもない（テンプレートは一切変更しない）。
 
+    引数を省いたものは、対話で聞く。
+      - リポジトリ名（-Name）：既定は VerifyCa*ForOT。* の部分を続けて聞く（例 Tdd → VerifyCaTddForOT）
+      - 公開・非公開（-Visibility）：Public / Private から選ぶ（既定は無い）
+      - 組織（-Owner）：既定は OpenTouryoProject
+
     安全のため次を守る。
-      - 公開・非公開は必ず指定する（-Visibility。既定は無い）
+      - 公開・非公開は必ず選ぶ（既定は無い）
       - 作る前に、作り先のリポジトリと手元のフォルダが無いことを確かめる（既にあれば止まる。空のリポジトリだけ再利用する）
-      - 作る GitHub のアカウントを表示する。-WhatIf で、何をするかだけを表示できる
+      - 作る前に、作る GitHub のアカウントと作る内容を表示し、GO / NOGO を選ばせる（既定は NOGO）。
+        -WhatIf では、何をするかだけを表示する（GO / NOGO は聞かない）
       - トークンをコマンド行や URL に書かない（git の push は gh の資格情報を一時的に使う）
 
     前提：GitHub CLI（gh）でログイン済みで、作り先の組織にリポジトリを作る権限があること。
     秘密情報（トークン・パスワード）はこのスクリプトに書かない。
+
+.EXAMPLE
+    ./New-VerifyRepo.ps1 -Clone
+    リポジトリ名・公開か非公開か・組織を対話で聞き、最後に GO / NOGO を聞く。
 
 .EXAMPLE
     ./New-VerifyRepo.ps1 -Name VerifyCaTddForOT3 -Visibility Public -Clone -WhatIf
@@ -25,13 +35,16 @@
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [Parameter(Mandatory, Position = 0)]
+    # 省くと対話で聞く（既定 VerifyCa*ForOT）
+    [Parameter(Position = 0)]
     [ValidatePattern('^[A-Za-z0-9._-]+$')]
     [string]$Name,
 
-    [Parameter(Mandatory)]
+    # 省くと対話で選ぶ（既定は無い）
     [ValidateSet('Public', 'Private')]
     [string]$Visibility,
+
+    # 省くと対話で聞く（既定 OpenTouryoProject）
 
     [ValidatePattern('^[A-Za-z0-9._-]+$')]
     [string]$Owner = 'OpenTouryoProject',
@@ -50,6 +63,50 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+$namePattern = '^[A-Za-z0-9._-]+$'
+
+function Read-Text {
+    # 空のまま Enter なら既定を使う。決まりに合うまで聞き直す
+    param([string]$Prompt, [string]$Default, [string]$Pattern)
+    while ($true) {
+        $v = (Read-Host "$Prompt [$Default]").Trim()
+        if ($v -eq '') { $v = $Default }
+        if ($v -match $Pattern) { return $v }
+        Write-Warning "使えない文字が入っている: $v"
+    }
+}
+
+function Select-Choice {
+    # 選択肢から 1 つ選ぶ。$Default が -1 なら既定は無い（選ぶまで聞き直す）
+    param([string]$Title, [string]$Message, [string[]]$Labels, [int]$Default)
+    $choices = [System.Management.Automation.Host.ChoiceDescription[]]@(
+        $Labels | ForEach-Object { New-Object System.Management.Automation.Host.ChoiceDescription $_ })
+    return $Host.UI.PromptForChoice($Title, $Message, $choices, $Default)
+}
+
+# ---- 対話で聞く（引数で渡したものは聞かない） ----
+
+if (-not $PSBoundParameters.ContainsKey('Name')) {
+    # * を含む名前は、* の部分を続けて聞く（$Name は検証の属性を持つので、決まった名前だけを入れる）
+    $n = Read-Text -Prompt 'リポジトリ名' -Default 'VerifyCa*ForOT' -Pattern '^[A-Za-z0-9._*-]+$'
+    while ($n.Contains('*')) {
+        $part = (Read-Host "「$n」の * に入れる語（例 Tdd）").Trim()
+        if ($part -match $namePattern) { $n = $n.Replace('*', $part) }
+        else { Write-Warning "使えない文字が入っている: $part" }
+    }
+    $Name = $n
+}
+
+if (-not $PSBoundParameters.ContainsKey('Visibility')) {
+    $i = Select-Choice -Title '公開・非公開' -Message '作るリポジトリを公開にするか、非公開にするか選ぶ（既定は無い）' `
+        -Labels @('&Public', 'P&rivate') -Default -1
+    $Visibility = @('Public', 'Private')[$i]
+}
+
+if (-not $PSBoundParameters.ContainsKey('Owner')) {
+    $Owner = Read-Text -Prompt '組織（organization）' -Default $Owner -Pattern $namePattern
+}
 
 $Destination = "$Owner/$Name"
 
@@ -73,9 +130,6 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 }
 
 $login = (Invoke-Gh @('api', 'user', '--jq', '.login')) -join ''
-Write-Host "GitHub のアカウント: $login（gh の現在のアカウント。違うなら gh auth switch）"
-Write-Host "作り先: $Destination（$Visibility）"
-Write-Host "テンプレート: $Template"
 
 $isTemplate = (Invoke-Gh @('repo', 'view', $Template, '--json', 'isTemplate', '--jq', '.isTemplate')) -join ''
 
@@ -95,6 +149,31 @@ $useTemplate = ($isTemplate -eq 'true') -and -not $destExists
 if (-not $useTemplate -and -not $AllowMirror) {
     throw ("テンプレートの印が無い（isTemplate=$isTemplate）か、空の作り先を再利用するため、「Use this template」で作れない。" +
            "テンプレートの Settings で「Template repository」を有効にするか、履歴ごと写してよければ -AllowMirror を付ける。")
+}
+
+# ---- 最後の確認（GO / NOGO） ----
+
+$how = if ($useTemplate) { '「Use this template」で作る（独立した履歴）' }
+       elseif ($destExists) { '空の作り先に、テンプレートの履歴ごと写す（-AllowMirror）' }
+       else { 'リポジトリを作り、テンプレートの履歴ごと写す（-AllowMirror）' }
+$cloneText = if ($Clone) { $cloneDir } else { '（クローンしない。-Clone で行う）' }
+
+Write-Host ''
+Write-Host '---- 作る内容 ----'
+Write-Host "GitHub のアカウント: $login（gh の現在のアカウント。違うなら gh auth switch）"
+Write-Host "作り先            : https://github.com/$Destination"
+Write-Host "公開・非公開      : $Visibility"
+Write-Host "テンプレート      : $Template"
+Write-Host "作り方            : $how"
+Write-Host "クローン先        : $cloneText"
+Write-Host '------------------'
+
+if (-not $WhatIfPreference) {
+    $go = Select-Choice -Title '確認' -Message 'この内容で作るか' -Labels @('&GO', '&NOGO') -Default 1
+    if ($go -ne 0) {
+        Write-Host 'NOGO：中止した（何も作っていない）。'
+        return
+    }
 }
 
 # ---- 作る ----
