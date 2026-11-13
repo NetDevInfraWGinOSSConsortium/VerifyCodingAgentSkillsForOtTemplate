@@ -22,7 +22,7 @@
 `MVC_Sample`（net48・core とも）は自分の `Logic\`（`LayerB`・`LayerD`・`DaoShippers`・引数と戻り値のクラス）を持ち、`Crud1`・`Crud2` はそれを呼ぶ。
 (C) では **`Logic\` を消し（csproj の `<Compile Include>` も）、コントローラを `WSServer_sample.Business.LayerB`・`WSIFType_sample` の型に張り替える**
 （残すと、画面は MVC 自身の B層を使ったままで、Shared の B層は使われない）。Shared の B層は MVC 版と**引数・戻り値の形が違う**ので、P層に変換を足す
-（例 `Models\ShipperMapper.cs`）：
+（**`Models\ViewModels\ShipperMapper.cs`** に置く。既存の ViewModel と同じフォルダ）：
 
 | | MVC 自身の B層 | Shared の B層 | P層での変換 |
 | --- | --- | --- | --- |
@@ -34,6 +34,7 @@
 MVC core（`Backend\MVC_Sample`）も同じ手順で通った：自身の `Logic\` の形が net48 と同じなので、`ShipperMapper.cs` は net48 のものをそのまま使える
 （`dotnet build` 警告 0・エラー 0、`/Home/Login`・`/Home/Index` が 200。2026-11-12）。core の DB 到達（Crud 画面）は確かめていない。
 Web Forms は変換が要らない（`webforms.md`）。
+`Obj2` のコードを消した後も、**`Models\ViewModels\TestShipperViweModel.cs` と、使われなくなった `using` は残す**（ビルドに影響しない。サンプルとの差分を小さくする）。
 
 ## MySql/Oracle の HintPath は「Frameworks 側」＝WebForms と割れる
 

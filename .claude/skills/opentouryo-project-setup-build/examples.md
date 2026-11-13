@@ -55,7 +55,7 @@ $vendor = Join-Path $repo "OpenTouryoAssemblies\Build_$Runtime"
 ただし**ランタイム固有の分岐は残す**：**確認パス**は net48＝`Build_net48\` 直下／core＝`Build_netcore100\<TFM>\`
 （`net10.0\`・`net10.0-windows7.0\`）配下。**RichClient のビルド方式**は net48＝非SDK sln を `& $msb …/t:build`
 （restore なし・obj パージ要）／core＝`.bat`。**core の欠落**は `net10.0-windows7.0\` が RichClient を回して初めて
-`Business`/`Dam*` が揃う。以下は分かりやすさのため別々に載せるが、実運用は `-Runtime` 1本に畳んでよい。
+`Business`/`Dam*` が揃う。**既知の警告（上流）**：core の `3_Build_Business_netcore100` で `NU1902`（`Microsoft.AspNetCore.WebUtilities` 2.3.0。develop・2026-11-13）。ビルドは通る。直さない。以下は分かりやすさのため別々に載せるが、実運用は `-Runtime` 1本に畳んでよい。
 
 - `setup-build.ps1` — 本スキル ①②③（ZIP取得 → net48 基盤ビルド → ベンダ）。短パス `C:\otr` でビルド、
   `OpenTouryo.Business.dll` の実在で成否判定。**親クラス2 をカスタマイズするなら任意ブロック**（overlay 適用＋
@@ -293,6 +293,7 @@ DLL 参照のままベンダ先 `Build_net48\` を指す（`references/reference
 | `packages.config` 有（非SDK net48・WebForms 等） | `nuget restore <sln>`（`-MSBuildPath` 明示） |
 | **`packages.config` 無 ＋ `PackageReference`（非SDK net48・2CS 等）** | `msbuild <sln> /t:restore,build`（`nuget restore` では復元されず `Microsoft.Data.SqlClient` 等が解決不能） |
 | SDK（core） | `dotnet build`（restore 込み） |
+| **混在（WSClient の `_all.sln`：ASPNETWebService が `packages.config`、ほかが `PackageReference`）** | `nuget restore <sln>` → `nuget restore <ASPNETWebService>\packages.config -PackagesDirectory <ASPNETWebService>\packages` → `msbuild <sln> /t:restore,build`（実測 2026-11-13。`samples/webservices.md` ③） |
 
 下の雛形の net48 の Web（WebForms・MVC）は `packages.config` 前提。**2CS 等 `PackageReference` のみの sln を足すときは `msbuild /t:restore,build` に切り替える**
 （DaoGen/DPQuery ツールが既にその方式＝下の任意ブロック）。

@@ -108,6 +108,8 @@ IIS Express / w3wp の CWD はアプリ フォルダでないため 500 にな�
   - **`//` コメント入り（JSONC）**。ASP.NET Core の JSON プロバイダはコメントを許容する＝**そのまま残す**。
     コメント中の `C:/root/...`（「下の C:/root/... は…」）は動作に関係しないが、張り替えた後は実態と食い違うので、`%OT_RESOURCE_ROOT%`（番号付きならその名前）に合わせて直す
     （厳密な JSON パーサで整形し直すと壊れる）。
+  - コメントが指す **`CONFIGURATION.md` は ZIP の `root\programs\CONFIGURATION.md`**（取り出さない）。張り替えに使う `%OT_RESOURCE_ROOT%` は、その **5 節「設定値の中の `%変数%` はフレームワークが展開する」**の仕組み。
+    コメントの「環境変数で差し替える」（4 節の `__` 区切り・`FxContainerization`）は使わない（値ごとの上書きで、ここでは要らない）。
 - **core は net48 MVC より2キー多い**（`FxXMLTCDefinition`/`FxXMLTMInProcessDefinition`）＝同名サンプルでもランタイムで割れる。
   **前ラウンドで core の ⑥ が見落とされた実績あり**（傍証：`appsettings.json` が `C:/root/...` のままコミットされていた）。
 - **net48 Web Forms は config 二段**：パス系キーは `<appSettings file="app.config"/>` の **`app.config` 側**、

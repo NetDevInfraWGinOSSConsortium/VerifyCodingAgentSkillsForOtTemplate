@@ -55,11 +55,13 @@ metadata:
 - **同一ランタイムなら ③ 基盤ビルドは流用**（`OpenTouryoAssemblies\Build_net48\` 等を再利用。再ビルド不要）。
   ③ を回すのはタグを変える／別ランタイムを足すときだけ（`opentouryo-project-setup-selection` で判断）。**別ランタイムを
   足すなら、そのランタイムの `Build_netcore100\` 等だけをビルド**（既存 ZIP 展開を再 DL せず流用してよい）。
+  **ツールもそのランタイムの版（`OT_Tools\*\*Core.csproj`・`*Core.sln`）を足す**（`samples/daogentool.md`・`dpquerytool.md`）。
 - **例外：2CS/リッチクライアント系（`2CSClientWin/WPF`・`WSClient_*`）は、同一ランタイム・同一タグでも ③ に追加ビルドが要る。**
   これらは `OpenTouryo.Business.RichClient` を参照するが、③ が回す `2_/3_Build_*` サブセットには含まれない
   （別ビルド。フル一式／`9_CICD.bat` なら出る＝本体の欠陥ではない。**base2 の有無と無関係**）。**netcore は欠落が広く、
   `net10.0-windows7.0\` の `Business`/`Dam*` ごと無い→フォルダ丸ごと再ベンダ**（net48 は `Business.RichClient` のみ）。
   → `opentouryo-project-setup-build` / `opentouryo-project-setup-selection`。
+  `-RichClient` の再実行は展開を作り直して全部を建て直し、`Build_net48\` も上書きする（同じ ZIP なら同じ DLL。想定どおり）。
 - **フォルダ名は判断させず固定規則にする（実測構成に準拠）：**
   - **net48 は元のサンプル名のまま**（`MVC_Sample` / `WebForms_Sample` / `SimpleBatch_sample` / `2CSClientWin_sample`）。
   - **core（.NET10）は、そのサンプルに net48 版が“存在する”とき（＝両ランタイム対応サンプル）だけ接尾辞 `_Core` を付ける**

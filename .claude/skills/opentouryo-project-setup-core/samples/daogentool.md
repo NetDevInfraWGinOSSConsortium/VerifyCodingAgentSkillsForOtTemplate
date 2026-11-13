@@ -7,6 +7,8 @@
 
 ## 置き場所とランタイム
 
+- **既知の警告（上流）**：net48 版のビルドで `NU1605`（`System.ValueTuple` のダウングレード。`Microsoft.Data.SqlClient` が 4.6.2 を求め、csproj は 4.6.1）。ビルドは通る。直さない（DPQuery_Tool も同じ。develop・2026-11-13）。
+
 - ソース：**`Frameworks\Tools\DaoGen_Tool`**（`Samples\` ではない。基盤ツリー配下）。
 - WinExe（WinForms GUI）。`AssemblyName` は `OpenTouryo.DaoGen_Tool`。**新しい ref は非対話 CLI（`/CUI`）も持つ**
   ＝実行時の CLI 起動（エージェント/CI で生成）は **`opentouryo-daogen-cli`**。

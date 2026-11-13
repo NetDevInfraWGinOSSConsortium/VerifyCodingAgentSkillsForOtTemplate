@@ -31,7 +31,9 @@
 1. **消す**：`AppCode\sample\Business\LayerB.cs`・`Dao\LayerD.cs`・`Dao\DaoShippers.cs`（csproj の `<Compile Include>` も）。
 2. **画面の `using` を替える**：`Aspx\sample\crud\sampleScreen.aspx.cs` の `using MyType;` → `using WSIFType_sample;` と `using WSServer_sample.Business;`
    （`sampleScreen_cc.aspx.cs` は元から `WSIFType_sample` を使う）。
-3. **残す**（Shared に無い・ほかが使う）：`Business\GetMasterData.cs`・`Dao\DaoCategories.cs`・`Dao\DaoSuppliers.cs`・`3TierTableAdapter\ProductsTableAdapter.cs`、
+3. **WS の 2 つを ProjectReference にし、`WebForms_Sample.sln` に足す**：WS の DLL 参照を消して `..\..\WS_sample\…` を ProjectReference にする。
+   sln の行の足し方は `webservices.md` の「ProjectReference 化の共通注意」と同じ（最後の `EndProject` の直後に足す、構成の行は同じ sln の既存のプロジェクトの行を雛形に GUID だけ替える、GUID の行の数で検算する。実測：Project 行 2・構成行 8）。
+4. **残す**（Shared に無い・ほかが使う）：`Business\GetMasterData.cs`・`Dao\DaoCategories.cs`・`Dao\DaoSuppliers.cs`・`3TierTableAdapter\ProductsTableAdapter.cs`、
    `Common\TestParameterValue.cs`・`TestReturnValue.cs`（名前空間 `MyType`。`AppCode\testPublic\Business\TestMTC_txg.cs` が使う）。
    **Shared が受け持つのは CRUD 画面（Shippers）の B層・D層だけ**。`TestParameterValue` が `MyType` と `WSIFType_sample` に 2 つ並ぶが、名前空間が別なのでぶつからない。
 

@@ -12,6 +12,8 @@
 | MVC（net48） | IIS Express | `MVC_Sample\MVC_Sample` | `/Home/Login`＝200（`/`・`/Home/Index`・`/Ping/Index` は 302） | `/Crud1/…`・`/Crud2/…` |
 | MVC（core） | Kestrel（`dotnet run`） | `MVC_Sample_Core\MVC_Sample` | `/`・`/Home/Index`・`/Home/Login`・`/Ping/Index`＝200 | `/Crud1/…`・`/Crud2/…` |
 
+**DB 到達を見るには DB（既定は SQL Server・Northwind）が要る。** 始める前に接続できるかを確かめ、できなければ人に
+「DB を立てる（`opentouryo-project-setup-db`）か、DB 到達の確認を飛ばすか」を聞く（飛ばしたら、報告の「未確認」に書く）。
 **起動が拒まれたら（権限・自動判定）、人に頼む**：起動するフォルダ・ポート・URL・`OT_RESOURCE_ROOT` の値を示し、結果を聞く（実測で拒まれた）。
 ログインと DB 到達の非対話の手順は、下の Web Forms・core の節。
 
@@ -43,7 +45,7 @@
 - `Aspx/Framework/Ping.aspx` … 未認証で **302**（→ login へ）。正常。
 - `Aspx/start/login.aspx` … **200** でログインフォームが描画されれば OK。
 - **ログイン**（WebForms_Sample。実測）：GET した hidden 全件に、`ctl00$ContentPlaceHolder_A$txtUserID`・`txtPassword`・`btnButton1` を載せて POST。
-  利用者 ID が空でなければ認証され、**302 → `menu.aspx`** なら OK（name は接頭辞が変わりうるので、末尾一致で拾う）。
+  利用者 ID が空でなければ認証され（値は何でもよい。実測 `user1`/`user1`）、**302 → `menu.aspx`** なら OK（name は接頭辞が変わりうるので、末尾一致で拾う）。
 - **DB 到達**：`Aspx/sample/crud/sampleScreen.aspx`（2 層）と `sampleScreen_cc.aspx`（`ddlCmctCtrl=testInProcess`。WS を (A) にした成否）で、
   マスタ上の `ctl00$btnMButton1`＝`SelectCount` を押し、応答に「N件のデータがあります」が出れば OK（下の「hidden を全件返す」と併用）。
 - **★ 初回リクエストは待つ**：ビルド直後の**初回リクエストは初回コンパイル**（WebForms＝`.aspx` コンパイル／core＝JIT・起動）で
