@@ -85,6 +85,8 @@ function Select-Choice {
     return $Host.UI.PromptForChoice($Title, $Message, $choices, $Default)
 }
 
+$script:Succeeded = $false
+try {
 # ---- 対話で聞く（引数で渡したものは聞かない） ----
 
 if (-not $PSBoundParameters.ContainsKey('Name')) {
@@ -113,9 +115,12 @@ $Destination = "$Owner/$Name"
 function Invoke-Gh {
     # gh の失敗を例外にする（native command の終了コードは $ErrorActionPreference では止まらない）
     param([string[]]$GhArgs, [switch]$AllowFailure)
-    $out = & gh @GhArgs 2>&1
+    # 'Stop' のままだと、gh が stderr に書いただけ（作り先が無いときの「Could not resolve」等）で
+    # PowerShell が終了コードを見る前に例外にしてしまう（-AllowFailure が効かず異常終了に見える）
+    $ErrorActionPreference = 'Continue'
+    $out = & gh @GhArgs 2>&1 | ForEach-Object { "$_" }
     if ($LASTEXITCODE -ne 0 -and -not $AllowFailure) {
-        throw "gh $($GhArgs -join ' ') が失敗した: $out"
+        throw "gh $($GhArgs -join ' ') が失敗した: $($out -join ' ')"
     }
     return $out
 }
@@ -213,9 +218,23 @@ if ($Clone -and $PSCmdlet.ShouldProcess($cloneDir, 'クローンする')) {
     Push-Location $CloneParent
     try { Invoke-Gh @('repo', 'clone', $Destination) | Out-Null }
     finally { Pop-Location }
+    if (-not (Test-Path (Join-Path $cloneDir '.git'))) { throw "クローンしたはずのフォルダが無い: $cloneDir" }
 }
 
+# ---- 結果の確認（作ったものを実際に見る） ----
+if (-not $WhatIfPreference) {
+    $null = Invoke-Gh @('repo', 'view', $Destination, '--json', 'url')
+}
+
+$script:Succeeded = $true
 Write-Host ''
+if ($WhatIfPreference) {
+    Write-Host "成功（-WhatIf）：何も作っていない。実行すると https://github.com/$Destination を作る。" -ForegroundColor Green
+}
+else {
+    Write-Host "成功：リポジトリを作った。" -ForegroundColor Green
+    if ($Clone) { Write-Host "成功：クローンした: $cloneDir" -ForegroundColor Green }
+}
 Write-Host "完了: https://github.com/$Destination"
 Write-Host @"
 
@@ -226,3 +245,10 @@ Write-Host @"
   4. README.md の「前提」を、この環境に書き換える
   5. 環境変数（OT_RESOURCE_ROOT* など）は利用者ごとに 1 つ。別の検証用リポジトリを指していないか確かめる（リセット手順.md）
 "@
+}
+catch {
+    Write-Host ""
+    Write-Host "失敗: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "（途中まで作られている可能性がある。GitHub 上の $Owner/$Name とクローン先のフォルダを確かめる）" -ForegroundColor Red
+    exit 1
+}
