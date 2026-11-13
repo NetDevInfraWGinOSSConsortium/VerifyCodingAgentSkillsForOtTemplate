@@ -1,6 +1,7 @@
 # OpenTouryo setup working tree (ZIP extract / base build lives in C:\otr, not here)
 
-OpenTouryoAssemblies/
+OpenTouryoAssemblies/*
+!OpenTouryoAssemblies/build-ref.txt
 *.log
 
 # .NET build artifacts
