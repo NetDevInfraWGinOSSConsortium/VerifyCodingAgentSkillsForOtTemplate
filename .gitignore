@@ -11,3 +11,5 @@ packages/
 .vs/
 *.user
 
+# 作業の見える化のダッシュボード（主のセッションが書き続ける。OpenTouryoCodingAgentAssets#19）
+AGENT-DASHBOARD.md
