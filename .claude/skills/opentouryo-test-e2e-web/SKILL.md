@@ -14,7 +14,7 @@ B層の振る舞い（抽出条件・計算・業務エラー）は B層のテ�
 
 | 項目 | 決まり |
 | --- | --- |
-| テストのプロジェクト | **`<Webプロジェクト名>.E2ETests`**（B層のテストの `<Webプロジェクト名>.Tests` とは分ける。起動とブラウザが要り、実行の条件が違う）。net10.0 は sln に加える（`dotnet sln add`）。**net48 も SDK 形式の csproj（`net48`）で作り、sln には加えない**（`dotnet sln add` が使えない。「実行」） |
+| テストのプロジェクト | **`<Webプロジェクト名>.E2ETests`**（B層のテストの `<Webプロジェクト名>.Tests` とは分ける。起動とブラウザが要り、実行の条件が違う）。net10.0 は sln に加える（`dotnet sln add`）。**net48 も SDK 形式の csproj（`net48`）で作り、sln には加えない**（`dotnet sln add` は、Web のプロジェクトを評価できずに失敗することがあり、成功しても旧形式の sln を書き直す〔構成の行の追加など。実測 44 行〕。成功しても加えない。「実行」） |
 | パッケージ | `NUnit` 4.6.1・`NUnit3TestAdapter` 6.3.0・`Microsoft.NET.Test.Sdk` 18.10.1・**`Microsoft.Playwright` 1.63.0**（実測）。データの準備に `Microsoft.Data.SqlClient`（**Web の csproj と同じ版**。脆弱性の対策で足している依存〔例 `System.Security.Cryptography.Pkcs`〕も同じものを足す） |
 | 参照 | **Web のプロジェクトも OpenTouryo の DLL も参照しない**（外から操作するだけ）。csproj は `references/snippets.md` |
 | ブラウザ | **Edge のチャネル**（`Channel = "msedge"`・`Headless = true`）。Windows に標準で入っており、ダウンロードが要らない |
@@ -72,6 +72,8 @@ Edge の無い環境（Linux の CI など）だけ、`Channel` を外し、ビ�
 - 確かめは **`Assertions.Expect(...)`**（`using static Microsoft.Playwright.Assertions;`）で書く：
   `ToHaveTextAsync`・`ToBeVisibleAsync`・`ToBeEnabledAsync`・`ToBeDisabledAsync`・`ToHaveURLAsync`・`ToHaveValueAsync`。
   **Expect は条件が満たされるまで待つ**（既定 5 秒）。読み込み・送信の後に固定の時間を待たない。
+- **待ち時間を短くするなら、操作とナビゲーションを分ける**：`page.SetDefaultTimeout(5000)` は `GotoAsync` などのナビゲーションにも効き、
+  初回のビューのコンパイル（再ビルドの直後）で 5 秒を超えて落ちる（実測 MVC net48）。**`page.SetDefaultNavigationTimeout(60000)` を合わせて置く。**
 - 送信は、画面のボタンを押す（`ClickAsync("#btnMain1")`）。URL へ直接 POST しない（画面の振る舞いを確かめていない）。
 
 **Web Forms の画面**（実測。テスト仕様で id を決めるときから守る）：
@@ -79,6 +81,10 @@ Edge の無い環境（Linux の CI など）だけ、`Channel` を外し、ビ�
   （マスタページ上のコントロールも引き継ぐ）。既存の画面（ログインなど）は末尾一致で指す（`input[id$="txtUserID"]`）。
 - **ボタンの id は `btn` で始める。** Open棟梁は id の接頭辞でイベントを結線する（`opentouryo-layer-p-webforms-event`）。`btn` で始まらないボタンは押しても動かない。
 - `asp:Button`（`<input type="submit">`）のキャプションは `ToHaveValueAsync` で確かめる（`ToHaveTextAsync` ではない）。
+- **ボタンの押下は、ポストバックの応答と読み込みを待つ**（待たないと、押す前の画面に対する `Expect` が古い画面で通る）。
+  `RunAndWaitForNavigationAsync` は Playwright 1.63 で古い形式の警告が出るので、POST の応答を待つ。**待ち時間は明示で渡す**（渡さないと `SetDefaultTimeout` に従う。実測）：
+  `await page.RunAndWaitForResponseAsync(() => page.ClickAsync(sel), r => r.Request.Method == "POST", new PageRunAndWaitForResponseOptions { Timeout = 60000 });`
+  の後に `await page.WaitForLoadStateAsync(LoadState.Load);`（押す前に `Expect(...).ToBeEnabledAsync()`）。
 - `GridView` の行は `#<id> tbody tr` で数え、見出し行は `<thead>` に出させる（`UseAccessibleHeader="true"` と `HeaderRow.TableSection = TableRowSection.TableHeader`。出さないと見出しが行数に入る）。
 
 | 仕様に書かれていること | E2E で確かめること |
