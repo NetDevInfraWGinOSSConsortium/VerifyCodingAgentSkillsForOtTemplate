@@ -1,5 +1,5 @@
 ---
-# expectation-guard-source: OpenTouryoCodingAgentAssets@ade897953a72 src/quality/ExpectationGuard/opentouryo-expectation-reviewer.md sha256:6c4be159093e9e30b39985cf2cf1483f921f6dd21afe6627073e79fdbd9bc301
+# expectation-guard-source: OpenTouryoCodingAgentAssets@37f290b892ca src/quality/ExpectationGuard/opentouryo-expectation-reviewer.md sha256:6c4be159093e9e30b39985cf2cf1483f921f6dd21afe6627073e79fdbd9bc301
 name: opentouryo-expectation-reviewer
 description: 期待値の変更のトレーラー（Expectation-Change:）の理由を、検出器が検出した一覧・差分と突き合わせる（書いたモデルとは別のモデル）。トレーラーの文面を提案したら、コミットの前に使う。止める判定はせず、観点ごとに「合う／合わない／判断できない」と根拠を返す。ファイルは編集しない。
 tools: Read, Grep, Glob, Bash, PowerShell, WebFetch
