@@ -1,5 +1,7 @@
 <!-- opentouryo-agent-assets:generated -->
 @AGENTS.md
+@QUALITY.common.md
+@QUALITY.md
 
 ## Claude Code 固有の指示
 
