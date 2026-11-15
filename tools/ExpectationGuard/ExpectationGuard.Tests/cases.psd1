@@ -1,4 +1,4 @@
-﻿# expectation-guard-source: OpenTouryoCodingAgentAssets@37f290b892ca src/quality/ExpectationGuard/tests/cases.psd1 sha256:d354b91c459c4da8196a641d57f251d6aead7c02b694ae89da4536a3ce9dc3d1
+﻿# expectation-guard-source: OpenTouryoCodingAgentAssets@945878daf458 src/quality/ExpectationGuard/tests/cases.psd1 sha256:75f7b084a0431ee36f6a79b78260f12a314ab4e31b2667fc1d6d3e98e99ce37b
 # 判定の用例（OpenTouryoCodingAgentAssets#3）。「この差分なら検出する／しない」を、文章ではなくテストで固定する。
 #
 #   各用例は、一時のリポジトリで次を行う。
@@ -905,6 +905,39 @@ public class FooTests
 '@ } }
             )
             Expect = @{ Exit = 1; Kinds = @('テストの削除'); Approved = 1 }
+        }
+        @{
+            Id = 'L07'; Category = '検出しない'; Title = '承認のトレーラーの書き方の誤り（全角の「：」）を、後のコミットで承認（範囲）'
+            Mode = 'Range'
+            Commits = @(
+                @{ Message = "B を消す`n`nExpectation-Change：B は仕様から消えた（#14）"; Files = @{ 'tests/FooTests.cs' = @'
+public class FooTests
+{
+    [Test]
+    public void A() { Assert.That(1, Is.EqualTo(1)); }
+}
+'@ } }
+                @{ Message = "承認する`n`nExpectation-Change-For: @SHA1@ B は仕様から消えた（#14。直した行 Expectation-Change: B は仕様から消えた（#14））" }
+            )
+            Expect = @{ Exit = 0; Kinds = @('テストの削除'); Approved = 1; Errors = 0 }
+        }
+        @{
+            Id = 'L08'; Category = '検出しない'; Title = '期待値の変更の無いコミットの書き方の誤りを、後のコミットで承認（範囲）'
+            Mode = 'Range'
+            Commits = @(
+                @{ Message = "A を足す`n`nTested-with：unit"; Files = @{ 'src/A.cs' = "class A {}`n" } }
+                @{ Message = "承認する`n`nExpectation-Change-For: @SHA1@ トレーラーの書き方の誤り（#14。直した行 Tested-with: unit）" }
+            )
+            Expect = @{ Exit = 0; Kinds = @(); Approved = 1; Errors = 0 }
+        }
+        @{
+            Id = 'L09'; Category = '検出する'; Title = '後の承認が無ければ、書き方の誤りは止める（範囲）'
+            Mode = 'Range'
+            Commits = @(
+                @{ Message = "A を足す`n`nTested-with：unit"; Files = @{ 'src/A.cs' = "class A {}`n" } }
+                @{ Message = 'B を足す'; Files = @{ 'src/B.cs' = "class B {}`n" } }
+            )
+            Expect = @{ Exit = 1; Kinds = @(); Approved = 0; Errors = 1 }
         }
         # ==============================================================
         # 提案の検査（#18。-Proposed：作業ツリーの変更をすべてステージしたとしたら。本物の索引は変えない）

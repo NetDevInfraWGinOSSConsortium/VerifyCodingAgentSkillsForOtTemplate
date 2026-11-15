@@ -1,4 +1,4 @@
-﻿# expectation-guard-source: OpenTouryoCodingAgentAssets@37f290b892ca src/quality/ExpectationGuard/CheckExpectationChange.ps1 sha256:4caa00ba1feafb992588da35809e3894a46daa0f6cd51a929f20cfbbd697d1c6
+﻿# expectation-guard-source: OpenTouryoCodingAgentAssets@945878daf458 src/quality/ExpectationGuard/CheckExpectationChange.ps1 sha256:d65d8b97c5ffa12e3cfad6a22d8cb4eccd3573677c2329c1fbf238c30cce430a
 <#
 .SYNOPSIS
     期待値の変更を検出し、トレーラー Expectation-Change が付いているかを確かめる（共通の本体）。
@@ -39,6 +39,7 @@
     「Expectation-Change-For: <sha> <理由>」（承認のトレーラーの名前＋「-For」）を、前のコミットの承認として扱う。
     <sha> は 7 文字以上の前方一致で、範囲の中のそのコミットより前の 1 件に当たること（当たらなければ警告し、承認にしない）。
     1 行に sha は 1 つ、理由は必須（書式の誤りは、どの動かし方でも止める）。-Staged・-Commit では、後の承認を見ない。
+    後のコミットで承認されたコミットは、トレーラーの書き方の誤りも止めずに警告にする（push したメッセージは書き直さないため）。
 
 .PARAMETER Staged
     ステージした差分（HEAD との差）を見る。commit-msg フックが使う。
@@ -1300,7 +1301,17 @@ try
         if ($t.Ok) { continue }
         $fixes += [pscustomobject]@{ Name = $laterName; Written = ("{0}: {1}" -f $tr.Key, $tr.Value); Fixed = $laterSyntax; Reasons = @($t.Problem); Key = ("{0}: {1}" -f $tr.Key, $tr.Value) }
     }
-    foreach ($f in $fixes) { $result.Errors += ("{0}（{1}）" -f $f.Written.Trim(), ($f.Reasons -join "。")) }
+    # 後のコミットで承認されたコミット（-Range が -LaterApproval を渡す。#14）では、書き方の誤りも止めずに警告にする。
+    #   push したメッセージは書き直さない（共有のブランチで、ほかの手元が壊れる）ので、後のコミットのほかに直し方が無いため。
+    #   誤った行は履歴に残り、集計（%(trailers)）には載らない。正しい行は、後のコミットの理由に書いてもらう
+    $excused = $fixes.Count -gt 0 -and @($LaterApproval | Where-Object { $_ }).Count -gt 0
+    foreach ($f in $fixes)
+    {
+        $m = "{0}（{1}）" -f $f.Written.Trim(), ($f.Reasons -join "。")
+        if ($excused) { $result.Warnings += ("{0}。後のコミットの {1}: で承認済みなので止めない（この行は集計に載らない）" -f $m, $laterName) }
+        else { $result.Errors += $m }
+    }
+    if ($excused) { $fixes = @() }
     foreach ($w in $result.Warnings) { Write-Warn $w }
 
     # 直し方（コミットを作り直す手順）。止めるときに最後に出す
@@ -1321,14 +1332,11 @@ try
         }
         else
         {
-            $rebaseBase = $(if ($parents.Count -eq 0) { "--root" } else { $sha.Substring(0, 8) + "^" })
-            Write-Msg "    コミットのメッセージを書き直す。"
-            Write-Msg "      最新のコミットなら    : git commit --amend"
-            Write-Msg ("      それより前のコミットなら : git rebase -i {0}（このコミットの pick を reword にする）" -f $rebaseBase)
-            Write-Msg "    push 済みなら git push --force-with-lease が要る（PR の履歴が書き換わるので、人が判断する）。"
-            Write-Msg "    または、履歴を書き換えずに、後のコミットで承認する（PR の CI〔-Range〕でだけ効く。手元のフックの判定は変わらない）："
+            Write-Msg "    後のコミットで承認する（履歴を書き換えない。PR の CI〔-Range〕でだけ効く。手元のフックの判定は変わらない）："
             Write-Msg ('      git commit --allow-empty -m "期待値の変更を承認する" -m "{0}: {1} <何が・なぜ変わったか（Issue 番号）>"' -f $laterName, $sha.Substring(0, 8))
-            Write-Msg "    どちらもできないとき：管理者が、その PR だけ保護を迂回してマージし、期待値を変えた理由を PR のコメントに残す。"
+            Write-Msg "    トレーラーの書き方の誤りも、これで止まらなくなる（理由に、直した行を書く。誤った行は履歴に残り、集計に載らない）。"
+            Write-Msg "    push したコミットのメッセージは書き直さない（--amend・rebase と force push。共有のブランチで、ほかの人・セッションの手元が壊れる）。"
+            Write-Msg "    できないとき（宛先のブランチの検出器が、この書き方を知らない版など）：管理者が、その PR だけ保護を迂回してマージし、理由を PR のコメントに残す。"
             Write-Msg "      必須のチェックを外す・ワークフローを止めるは使わない（ほかの PR の保護も外れる・チェックが結果を返さず PR が止まる）。"
             Write-Msg ("    手順の全体：{0}原本 OpenTouryoCodingAgentAssets の docs/expectation-guard.md「CI で止まったとき」" -f $(if ($rules.Reference) { $rules.Reference + "・" } else { "" }))
         }
