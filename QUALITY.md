@@ -36,6 +36,7 @@
 | テスト先行の進め方・テストの保護 | [`TESTING.md`](TESTING.md)、[`docs/spec/cmn-testfirst.md`](docs/spec/cmn-testfirst.md)、[`docs/plan/cmn-testfirst.md`](docs/plan/cmn-testfirst.md) |
 | 検証の手順（何をどの順で作るか） | [`docs/prompt/検証プロンプト.md`](docs/prompt/検証プロンプト.md)、[`docs/plan/`](docs/plan/) |
 | 仕様（根拠の ID の出典） | NorthwindDbSampleSpec（<https://github.com/OpenTouryoProject/NorthwindDbSampleSpec>）の `HLD/Common.md`・`LLD/TableSchema`・`LLD/UI_ElementsAndEventList`・`LLD/EventSpec`・決定記録 `LLD/Decisions`。フレームワークごとの画面の決まりは [`docs/spec/cmn-framework.md`](docs/spec/cmn-framework.md) |
+| B層のテストのカバレッジ | `dotnet test <B層のテストの csproj> --collect "Code Coverage;Format=cobertura" --results-directory <リポジトリの外の一時フォルダ>`（net48 は MSBuild で組んでから `--no-build` を足す。`opentouryo-test-layer-b`）。収集器はテストのプロジェクトの `Microsoft.NET.Test.Sdk` に付いているので、パッケージを足さない。結果の `*.cobertura.xml` のうち、**アプリの B層・D層のアセンブリ**（`Shared\` の構成なら `WSServer_sample`、そうでなければ Web のプロジェクト）の `package` だけを読む（`OpenTouryo.*` とテストのプロジェクトも入るが、数えない） |
 | レビューの観点（テスト先行） | [`docs/plan/cmn-testfirst-review.md`](docs/plan/cmn-testfirst-review.md)（司令役がレビュー役に渡す。**実装役は読まない**。[`TESTING.md`](TESTING.md) 5） |
 
 ---
@@ -82,6 +83,7 @@
 - [ ] 業務エラーは `BusinessApplicationException` で返しているか（`ErrorFlag = true` に変わる。呼び出し側で `catch` していないか）
 - [ ] バッチ更新で、更新の件数・対象の範囲（検索の結果セットに限る）が仕様のとおりか
 - [ ] トランザクションの範囲（2CS の手動トランザクションを含む）と分離レベルが、`opentouryo-transaction-control` の決まりに合うか
+- [ ] B層のテストが、変更した分岐を実際に通っているか。**カバレッジ**（一次情報の表）の `*.cobertura.xml` で、変えたメソッドの行の `hits` と分岐の `condition-coverage` を見る
 
 ### DB（D層）
 
@@ -109,6 +111,9 @@
 - **テスト先行の検証ごとに**：仕様の取りこぼし・手戻り・人に上げた仕様の決定の数（今の検証（いきなり実装）と比べる。羅針盤の「アプリ開発への展開」）
   - 仕様の取りこぼし：レビュー役の指摘のうち、期待が仕様（本文・決定記録）で決まるのに、テスト仕様に無かったものの数
   - 手戻り：段ごとの、レビュー役からの差し戻しの回数
+- **B層のテストのカバレッジ**（行・分岐の割合。測り方は一次情報の表）：検証ごとに、完了の報告と決定のレポートに書く（ランタイムごとに測ったなら、両方）。
+  **判定には使わない。** どこにテストを足すかを選ぶための指針である。通ったことは、確かめたことを意味しない（行を通っても、結果を検証しているとは限らない）。
+  画面の E2E が通すサイトの行は数えない（別のプロセスのため）。低い数字は「B層の単体テストで確かめていない」という意味である
 - **B層のテストの根拠の種類の内訳**（`EV-*`・`VAL-*`・`ERR-*`・`DEC-*`・Issue）。基準の値は、まだ取っていない
 
 ---
