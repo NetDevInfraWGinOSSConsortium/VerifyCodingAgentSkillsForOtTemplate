@@ -22,7 +22,7 @@
 | 入れ直しのコマンド | `<アセット>\install\install.ps1 -Product claude -TargetRoot <このリポジトリ> -IncludeQualityGuard` |
 | 宛先のブランチ（段 3 で検査する PR の宛先） | `develop`・`master`・`main`（`.github/workflows/expectation-change.yml`） |
 | 必須のチェック | `expectation-change`（検証リポジトリを作った後に、人がブランチ保護で必須にする。まだなら、そう書き換える） |
-| 共有の作業ブランチ | 無し（`main` に直接。共有のブランチを作ったら書き足す） |
+| 共有の作業ブランチ | 無し（`main` か、検証ごとに 1 つのセッションが使うブランチ。ほかの人・セッションと共有するブランチを作ったら書き足す） |
 | 変更のレビュー役（4 節） | `opentouryo-change-reviewer` |
 | テスト先行のレビュー役 | `opentouryo-test-reviewer`（[`TESTING.md`](TESTING.md) 5） |
 | 回帰テストの名前 | テストのケース名（テスト仕様の 1 行）に、根拠として Issue の番号を書く |
@@ -36,7 +36,7 @@
 | テスト先行の進め方・テストの保護 | [`TESTING.md`](TESTING.md)、[`docs/spec/cmn-testfirst.md`](docs/spec/cmn-testfirst.md)、[`docs/plan/cmn-testfirst.md`](docs/plan/cmn-testfirst.md) |
 | 検証の手順（何をどの順で作るか） | [`docs/prompt/検証プロンプト.md`](docs/prompt/検証プロンプト.md)、[`docs/plan/`](docs/plan/) |
 | 仕様（根拠の ID の出典） | NorthwindDbSampleSpec（<https://github.com/OpenTouryoProject/NorthwindDbSampleSpec>）の `HLD/Common.md`・`LLD/TableSchema`・`LLD/UI_ElementsAndEventList`・`LLD/EventSpec`・決定記録 `LLD/Decisions`。フレームワークごとの画面の決まりは [`docs/spec/cmn-framework.md`](docs/spec/cmn-framework.md) |
-| レビューの観点（テスト先行） | [`docs/plan/cmn-testfirst-review.md`](docs/plan/cmn-testfirst-review.md) |
+| レビューの観点（テスト先行） | [`docs/plan/cmn-testfirst-review.md`](docs/plan/cmn-testfirst-review.md)（司令役がレビュー役に渡す。**実装役は読まない**。[`TESTING.md`](TESTING.md) 5） |
 
 ---
 
@@ -46,9 +46,9 @@
 
 | 単位 | リスク | 正の根拠 | 検証の手段 | 人が必ず見る箇所 |
 |---|---|---|---|---|
-| B層の業務ロジック（業務コードクラスの `UOC_*`。`DoBusinessLogic` が入口で、トランザクションの境界。マスタ・受注のバッチ更新を含む） | **高** | EventSpec・TableSchema の業務ルール・決定記録（`EV-*`・`VAL-*`・`ERR-*`・`DEC-*`） | B層の単体テスト（NUnit。`opentouryo-test-layer-b`） | 業務エラーの判定（`ErrorFlag`・メッセージ ID）、更新の件数と範囲、トランザクションの範囲と分離レベル |
+| B層の業務ロジック（業務コードクラスの `UOC_*`。`DoBusinessLogic` が入口で、トランザクションの境界。マスタ・受注のバッチ更新を含む） | **高** | EventSpec・TableSchema の業務ルール・決定記録（`EV-*`・`VAL-*`・`ERR-*`・`DEC-*`） | B層の単体テスト（NUnit。`opentouryo-test-layer-b`）。`Shared\` に置いて複数の P層から共用するなら、すべてのランタイムで流す | 業務エラーの判定（`ErrorFlag`・メッセージ ID）、更新の件数と範囲、トランザクションの範囲と分離レベル |
 | すべての画面に効く共通の部分（共通のレイアウト `_Layout.cshtml`・Master Page、設定 `app.config`・`appsettings.json`、画面遷移・メッセージの定義） | **中〜高** | `docs/spec/cmn-framework.md`、`HLD/Common.md` | 疎通（既存の画面を開く）、画面の E2E | 共通のレイアウト・設定の既定値・接続文字列の変更、**親クラス 1・2 を直していないか**（[`AGENTS.md`](AGENTS.md)「クラスの階層と修正可否」） |
-| D層（CmnDao で実行する SQL・CLI で自動生成した Dao） | **中〜高** | TableSchema、SQL Server の文法 | B層の単体テスト（DB の状態まで見る） | SQL の組み立て（パラメタ化）、自動生成の Dao を手で直していないか、検索の条件とページの範囲 |
+| D層（CmnDao で実行する SQL と、その定義ファイル `resource/Sql`・CLI で自動生成した Dao） | **中〜高** | TableSchema、SQL Server の文法 | B層の単体テスト（DB の状態まで見る） | SQL の組み立て（パラメタ化。並べ替えの列・方向など、画面の入力で SQL の形を変えるなら、決まった候補から選んでいるか）、自動生成の Dao を手で直していないか、検索の条件とページの範囲 |
 | P層の画面（WebForms・MVC・WinForms・WPF の画面コード、メッセージ・ダイアログ、ページング、グリッドの編集） | 中 | UI_ElementsAndEventList・EventSpec、`docs/spec/cmn-framework.md` | Web は画面の E2E（`opentouryo-test-e2e-web`）、Windows は人の確認 | 入力の検証（`VAL-*`）、更新の前の YES/NO の確認、エラーの表示（`ERR-*`）、状態を変える要求の CSRF 対策（Web） |
 | テストの補助・ツール・スクリプト（`tools/`・`New-VerifyRepo.ps1` など） | 低 | — | 動かして確かめる | 原則として見ない（検出器の写しは直さない。`QUALITY.common.md` 3 節） |
 
@@ -107,6 +107,8 @@
 ## 6. 計測
 
 - **テスト先行の検証ごとに**：仕様の取りこぼし・手戻り・人に上げた仕様の決定の数（今の検証（いきなり実装）と比べる。羅針盤の「アプリ開発への展開」）
+  - 仕様の取りこぼし：レビュー役の指摘のうち、期待が仕様（本文・決定記録）で決まるのに、テスト仕様に無かったものの数
+  - 手戻り：段ごとの、レビュー役からの差し戻しの回数
 - **B層のテストの根拠の種類の内訳**（`EV-*`・`VAL-*`・`ERR-*`・`DEC-*`・Issue）。基準の値は、まだ取っていない
 
 ---
