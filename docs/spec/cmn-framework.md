@@ -1,5 +1,15 @@
 # フレームワーク毎の共通仕様
 
+## データベース
+- 接続先の DB は **`Northwind2`**（接続文字列は `Initial Catalog=Northwind2`）。NorthwindDbSampleSpec の DDL・DML（`Northwind/SQLSvr/`）で初期化した、
+  楽観排他用の `RowVersion` 列付きのスキーマを使う（`HLD/Common.md` 9 節）。
+  - LocalServicesOnDocker が作る `Northwind`（Microsoft 公式の `instnwnd.sql`。`RowVersion` 列・`SalesTargets` 表が無く、FOREIGN KEY・CHECK の制約がある）は使わない。名前を分けて並べて置く。
+- 初期化：`01_CreateDatabase.sql` → `02_CreateTables.sql` → `03_InsertData.sql` を、**DB 名を `Northwind2` に置き換えた写し**（一時フォルダ）で、この順に流す。
+  - 置き換えるのは `[Northwind]` と `N'Northwind'` だけ（スクリプトは DB 名を決め打ちにしている）。NorthwindDbSampleSpec の原本は直さない。
+  - `sqlcmd` で流す（SQL 認証は `-U sa -P <パスワード>`。スクリプトは BOM 付き UTF-8 でコメントに日本語があるので `-f 65001`）。
+  - 3 つとも再実行できる（`02` は表を消して作り直し、`03` はデータを消して入れ直す）。流し直すと、テストが入れた行も消える。
+- 接続文字列は、アプリ・テスト・ツールの構成ファイル（`Web.config`・`App.config`・`appsettings.json` など）のすべてで `Initial Catalog=Northwind2` にする（サンプルの既定は `Northwind`）。
+
 ## 画面共通
 - すべての画面のメインボタンはフッタ部に5つ配置し、動的にボタンのキャプションを適切な名称に変更し、不要なボタンはdisableにする。
   - メインボタンとは、機能トランザクションを起動するボタン（検索・登録・更新・削除など）である。画面定義書がこれらのボタンを別の領域に置いていても、フッタ部に配置する。
