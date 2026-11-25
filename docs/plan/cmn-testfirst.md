@@ -11,6 +11,12 @@ MVC_Sample_Core に opentouryo-* スキルを使用して実装する。
 ## ケース3：WebForms_Sample
 WebForms_Sample に opentouryo-* スキルを使用して実装する。
 
+## ケース4：2CSClientWin_sample
+2CSClientWin_sample に opentouryo-* スキルを使用して実装する。
+
+## ケース5：WSClientWin_sample
+WSClientWin_sample に opentouryo-* スキルを使用して実装する。
+
 ## B層を共用する構成（リポジトリ直下に `Shared\` がある）
 P層が違っても B層・D層は 1 つ（`Shared\`）。**B層とそのテスト（`Shared\WSServer_sample.Tests\`）は、最初に回すケースで作る。**
 **2 つ目以降のケースは B層を作らず、P層と画面の E2E だけをテスト先行で作る**（テスト仕様には、B層は作成済みと書き、そのテストの場所を示す）。
